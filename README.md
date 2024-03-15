@@ -1,1 +1,1 @@
-# Sisteme-de-operare-Operating-Systems-SO-
+# Sisteme-de-operare/Operating-Systems (SO)
