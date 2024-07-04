@@ -1,0 +1,1169 @@
+threads
+
+3. Scrieti un program C care primeste ca argumente in linia de comanda stringuri de maxim 30 de caractere. Pentru fiecare parametru, se creeaza un thread care numara cate vocale si cate cifre (0-9) caractere exista in acel string, apoi actualizeaza una sau mai multe variabile globala care contorizeaza numarul total de vocale si cifre din toate stringurile primite ca si parametri. La final programul afiseaza pentru fiecare string si per total numarul de vocale si cifre din stringurile parametri.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <time.h>
+#include <string.h>
+
+
+int nrvocale=0, nrcifre=0;
+
+pthread_mutex_t mutex_vocale;
+
+pthread_mutex_t mutex_cifre;
+
+void* functie(void *arg)
+
+{
+  char *s=(char*)arg;
+  for(int i=0; i<strlen(s);i++) {
+
+   char ch=s[i];
+
+   if(strchr("AEIOUaeiou", ch)) {
+    pthread_mutex_lock(&mutex_vocale);
+    nrvocale++;
+    pthread_mutex_unlock(&mutex_vocale);
+
+  }
+
+  if(ch >= '0' && ch<='9') {
+    pthread_mutex_lock(&mutex_cifre);
+    nrcifre++;
+    pthread_mutex_unlock(&mutex_cifre);
+ }
+
+}
+return NULL;
+
+}
+
+int main(int argc, char* argv[])
+{
+
+if(argc <2){
+printf("dati argumente! \n");
+exit(1);
+}
+
+pthread_mutex_init(&mutex_vocale,NULL);
+pthread_mutex_init(&mutex_cifre,NULL);
+
+
+int nrthreaduri=argc-1;
+
+pthread_t t[nrthreaduri];
+
+    for(int i = 0; i < nrthreaduri; i++) {
+        printf("%s\n", argv[i + 1]);
+    }
+
+//creare threaduri
+  for(int i=0; i<nrthreaduri;i++)
+    {
+       char *str=argv[i+1];// ca altfel ne numara si linia de comanda
+       pthread_create(&t[i], NULL, functie, (void *)str);//argv[i+1]);
+    }
+
+//asteptam finalizare threaduri
+ for(int i=0; i<nrthreaduri;i++)
+        pthread_join(t[i],NULL);
+
+
+
+pthread_mutex_destroy(&mutex_vocale);
+pthread_mutex_destroy(&mutex_cifre);
+
+printf("nr vocale: %d\n", nrvocale);
+
+printf("nr cifre: %d\n", nrcifre);
+
+return 0;
+}
+
+-------------------------------------------
+
+THREAD CU PARAMETRU STRING DIN FISIER
+
+problema
+fisier
+miere
+pere 
+banane
+ana
+maria
+
+ 
+
+thread uri iau ca parametru cate un string din fiecare linie de fisier
+
+numara pt fiecare cuvant cate vocale si cate consoane au
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <string.h>
+
+#define NUM_THREADS 5
+
+// Variabile globale pentru numărul total de vocale și consoane
+int total_vowels = 0;
+int total_consonants = 0;
+pthread_mutex_t mutex_vowels;
+pthread_mutex_t mutex_consonants;
+
+// Funcție pentru a număra vocalele și consoanele într-un cuvânt și a actualiza variabilele globale
+void *count_vowels_consonants(void *arg) {
+    char *word = (char *)arg;
+    int vowels = 0, consonants = 0;
+
+    // Numărăm vocalele și consoanele în cuvânt
+    for (int i = 0; i < strlen(word); i++) {
+        char ch = word[i];
+        if (ch >= 'a' && ch <= 'z') {
+            if (ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u') {
+                vowels++;
+            } else {
+                consonants++;
+            }
+        } else if (ch >= 'A' && ch <= 'Z') {
+            if (ch == 'A' || ch == 'E' || ch == 'I' || ch == 'O' || ch == 'U') {
+                vowels++;
+            } else {
+                consonants++;
+            }
+        }
+    }
+
+    // Actualizăm variabilele globale folosind un mutex pentru a evita condițiile de cursă
+    pthread_mutex_lock(&mutex_vowels);
+    total_vowels += vowels;
+    pthread_mutex_unlock(&mutex_vowels);
+
+    pthread_mutex_lock(&mutex_consonants);
+    total_consonants += consonants;
+    pthread_mutex_unlock(&mutex_consonants);
+
+    pthread_exit(NULL);
+}
+
+int main(int argc, char *argv[]) {
+    // Verificăm dacă a fost furnizat un nume de fișier
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    char word[100];
+    pthread_t threads[NUM_THREADS];
+    int thread_count = 0;
+
+    pthread_mutex_init(&mutex_vowels, NULL);
+    pthread_mutex_init(&mutex_consonants, NULL);
+
+    // Citim fiecare linie din fișier și creăm un fir de execuție pentru fiecare cuvânt
+    while (fscanf(file, "%s", word) != EOF) {
+        if (pthread_create(&threads[thread_count], NULL, count_vowels_consonants, (void *)word) != 0) {
+            fprintf(stderr, "Error creating thread\n");
+            exit(EXIT_FAILURE);
+        }
+        thread_count++;
+
+        // Dacă am creat NUM_THREADS fire de execuție, așteptăm finalizarea acestora
+        if (thread_count == NUM_THREADS) {
+            for (int i = 0; i < NUM_THREADS; i++) {
+                pthread_join(threads[i], NULL);
+            }
+            thread_count = 0;
+        }
+    }
+
+    // Așteptăm finalizarea firelor de execuție rămase
+    for (int i = 0; i < thread_count; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    // Afișăm rezultatele
+    printf("Total vowels: %d\n", total_vowels);
+    printf("Total consonants: %d\n", total_consonants);
+
+    // Închidem fișierul și distrugem mutex-urile
+    fclose(file);
+    pthread_mutex_destroy(&mutex_vowels);
+    pthread_mutex_destroy(&mutex_consonants);
+
+    return 0;
+}
+
+
+
+
+
+
+-----------------------------
+ 
+THREAD
+
+program care creeaza 7 thread uri si are 2 variabile globale care contorizeaza
+numerele cu o cifra si numerele cu 2 cifre
+
+
+fiecare thread genereaza 3 numere random intre 0 si 25, si in functie de numarul obtinut, incrementeaza contorul global corespunzator numarului de cifre
+
+
+thread ul principal afiseaza la terminarea thread urilor valoarea celor 2 variabile globale
+
+
+afisati si numerele generate.  folositi mecanisme de sincronizare cat mai eficiente
+
+
+./prog
+
+numere cu 1 cifra: 5
+numer cu 2 cifre: 16
+
+
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+int nrocif=0, nrdouacif=0;
+pthread_t t[7];
+int tid[7];
+
+
+pthread_mutex_t mtx1;
+pthread_mutex_t mtx2;
+
+
+
+//3*7=21 de numere in total
+
+
+void*  generarenumere(void* arg){
+    int numere[3];
+    int tid=*(int*)arg;
+
+    srand(time(NULL)+tid); // initializare generator de nr aleatorii
+
+    for(int i=0; i<3; i++) {
+     numere[i] = rand()%26; // generam nr intre 0 si 25
+    }
+
+
+
+///////pt gen litere
+char litere[3];
+
+    for (int i = 0; i < 3; i++) {
+        litere[i] = 'A' + rand() % 26; // Generăm o literă aleatorie
+    }
+
+ printf("Threadul cu id %d a generat literele: ", tid);
+    for (int i = 0; i < 3; i++) {
+        printf("%c ", litere[i]);
+    }
+    printf("\n");
+
+ pthread_mutex_lock(&mtx1);
+    for (int i = 0; i < 3; i++) {
+        if (litere[i] < 'J') {
+            nrocif++;
+        } else {
+            nrdouacif++;
+        }
+    }
+    pthread_mutex_unlock(&mtx1);
+
+    return NULL;
+}
+//////////
+
+
+   printf("threadul cu id %d a generat numerele: ", tid);
+  for(int i=0; i<3; i++) {
+     printf("%d \n", numere[i]);
+  }
+  printf("\n");
+
+  pthread_mutex_lock(&mtx1);
+ for(int i=0; i<3; i++) {
+    if(numere[i] <10) { nrocif++; }
+    else {nrdouacif++; }
+ }
+  pthread_mutex_unlock(&mtx1);
+
+  //return NULL;
+
+ pthread_exit(NULL);
+
+}
+
+
+int main(){
+  int i;
+  pthread_mutex_init(&mtx1,NULL);
+
+
+//creare threaduri
+  for(i=0; i<7;i++)
+    { tid[i]=i;
+       pthread_create(&t[i], NULL, generarenumere,&tid[i]);
+    }
+
+//asteptam finalizare threaduri
+ for(i=0; i<7;i++)
+        pthread_join(t[i],NULL);
+
+ pthread_mutex_destroy(&mtx1);
+
+
+printf("numere cu 1 cifra: %d\n", nrocif);
+printf("numere cu 2 cifre: %d\n", nrdouacif);
+
+return 0;
+}
+
+
+---------------------------
+
+kevin nr o cifra si 2 cifre
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <time.h>
+
+pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex2 = PTHREAD_MUTEX_INITIALIZER;
+int nr_1 = 0;
+int nr_2 = 0;
+
+void* dow(void* arg){
+	int n=0;
+	for(int i=0; i<3; i++){
+		//srand(time(NULL));
+		n = rand() % 26;
+
+		if(n<10){
+		pthread_mutex_lock(&mutex1);
+		nr_1 += 1;
+		pthread_mutex_unlock(&mutex1);}
+
+		else if(n >9 && n<100){
+		pthread_mutex_lock(&mutex2);
+		nr_2 += 1;
+		pthread_mutex_unlock(&mutex2);}
+		printf("nr %d generat: %d\n",i,n);
+	}
+
+return NULL;
+}
+
+
+int main (int arg, char* argv[]){
+
+	pthread_t tids[7];
+
+
+	for(int i =0; i< 7; i++){
+
+		pthread_create(&tids[i], NULL, dow, &i);
+	}
+
+
+	for(int i =0; i< 7; i++){
+
+		pthread_join(tids[i], NULL);
+	}
+
+	printf("nr cu o cifra: %d\n",nr_1);
+	printf("nur cu doua cifre: %d\n",nr_2);
+
+return 0;
+}
+
+-----------------------------
+
+thread medeea 
+
+2  var globale
+thread uri
+
+se citeste din linia de comanda un sir de nr intregi
+
+numarati cate numere contin 5 si cate 7
+si daca contin si 5 si 7 aduni 2 de 2 ori
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+
+int count_contains_5 = 0;
+int count_contains_7 = 0;
+pthread_mutex_t mutex_5, mutex_7;
+
+void *check_number(void *arg) {
+    char *num_str = (char *)arg;
+    int contains_5 = 0;
+    int contains_7 = 0;
+
+    for (int i = 0; num_str[i] != '\0'; i++) {
+        if (num_str[i] == '5') {
+            contains_5 = 1;
+        }
+        if (num_str[i] == '7') {
+            contains_7 = 1;
+        }
+    }
+
+    if (contains_5) {
+        pthread_mutex_lock(&mutex_5);
+        count_contains_5++;
+        pthread_mutex_unlock(&mutex_5);
+    }
+
+    if (contains_7) {
+        pthread_mutex_lock(&mutex_7);
+        count_contains_7++;
+        pthread_mutex_unlock(&mutex_7);
+    }
+
+    pthread_exit(NULL);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <num1> <num2> ... <numN>\n", argv[0]);
+        return 1;
+    }
+
+    pthread_t threads[argc - 1];
+    pthread_mutex_init(&mutex_5, NULL);
+    pthread_mutex_init(&mutex_7, NULL);
+
+    for (int i = 1; i < argc; i++) {
+        pthread_create(&threads[i - 1], NULL, check_number, (void *)argv[i]);
+    }
+
+    for (int i = 1; i < argc; i++) {
+        pthread_join(threads[i - 1], NULL);
+    }
+
+    pthread_mutex_destroy(&mutex_5);
+    pthread_mutex_destroy(&mutex_7);
+
+    printf("Numbers containing 5: %d\n", count_contains_5);
+    printf("Numbers containing 7: %d\n", count_contains_7);
+
+    return 0;
+}
+
+
+
+ 
+
+
+---------------------
+
+
+THREAD DIANA PERTA AZI
+
+
+
+program ce primeste mai multe stringuri ca parametri
+
+pentru fiecare string creeaza cate un thread care primeste ca parametru un string
+
+fiecare thread verifica daca stringul e palindrom si incrementeaza var globale 
+e_palindrom si nu_e_palindrom
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+#include <stdbool.h>
+
+int e_palindrom = 0;
+int nu_e_palindrom = 0;
+pthread_mutex_t mutex_palindrom;
+
+bool is_palindrome(const char *str) {
+    int len = strlen(str);
+    for (int i = 0; i < len / 2; ++i) {
+        if (str[i] != str[len - i - 1]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void *check_palindrome(void *arg) {
+    char *str = (char *)arg;
+    if (is_palindrome(str)) {
+        pthread_mutex_lock(&mutex_palindrom);
+        e_palindrom++;
+        pthread_mutex_unlock(&mutex_palindrom);
+    } else {
+        pthread_mutex_lock(&mutex_palindrom);
+        nu_e_palindrom++;
+        pthread_mutex_unlock(&mutex_palindrom);
+    }
+    pthread_exit(NULL);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <string1> <string2> ... <stringN>\n", argv[0]);
+        return 1;
+    }
+
+    pthread_t threads[argc - 1];
+    pthread_mutex_init(&mutex_palindrom, NULL);
+
+    for (int i = 1; i < argc; i++) {
+        pthread_create(&threads[i - 1], NULL, check_palindrome, (void *)argv[i]);
+    }
+
+    for (int i = 1; i < argc; i++) {
+        pthread_join(threads[i - 1], NULL);
+    }
+
+    pthread_mutex_destroy(&mutex_palindrom);
+
+    printf("Number of palindromes: %d\n", e_palindrom);
+    printf("Number of non-palindromes: %d\n", nu_e_palindrom);
+
+    return 0;
+}
+
+
+---------KEVIN PALINDROM
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <time.h>
+#include <string.h>
+int palind = 0;
+int nopalind = 0;
+
+pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex2 = PTHREAD_MUTEX_INITIALIZER;
+
+
+void * dow(void* arg){
+char* str = (char*) arg;
+int m = strlen(str);
+int aux = nopalind;
+for (int i = 0; i< m; i++){
+	if(str[i] != str[m-i-1]){
+		pthread_mutex_lock(&mutex1);
+		nopalind+=1;
+		pthread_mutex_unlock(&mutex1);
+		break;}
+}
+
+if(aux == nopalind){
+ 	pthread_mutex_lock(&mutex2);
+        palind+=1;
+        pthread_mutex_unlock(&mutex2);
+}
+
+return NULL;
+}
+
+
+int main(int arg, char* argv[]){
+
+if(arg < 2){
+	printf("nr insuficient de argumente: ./pb5 str1 ...\n");
+	exit(1);}
+
+int n = arg -1;
+pthread_t tids[n];
+
+for(int i =0; i<n; i++){
+
+	pthread_create(&tids[i],NULL,dow,argv[i+1]);
+}
+
+for (int i =0; i<n; i++){
+	pthread_join(tids[i],NULL);
+}
+
+printf("nr de cuvinte palindorme: %d\n",palind);
+printf("nr de cuvinte nepalindorme: %d\n",nopalind);
+
+return 0;}
+
+
+----------------------
+
+
+thread alex se termina cu T SAU S
+
+rezolva cu thread
+parametri mai multe stringuri(cuvinte) in linia de comanda
+
+pentru fiecare cuvant se creeaza un thread care priimeste ca argument cuvantul si verifica daca acesta se termina cu litera 's' sau 't' litera mica sau mare incrmentand un control global pt fiecare caz
+
+thread ul principa; afiseaza la final cate argumente se termina cu t si cate cu s
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <string.h>
+#include <ctype.h>
+
+int count_ends_with_s = 0;
+int count_ends_with_t = 0;
+pthread_mutex_t mutex_s, mutex_t;
+
+void *check_word(void *arg) {
+    char *word = (char *)arg;
+    int len = strlen(word);
+    char last_char = word[len - 1];
+
+    if (last_char == 's' || last_char == 'S') {
+        pthread_mutex_lock(&mutex_s);
+        count_ends_with_s++;
+        pthread_mutex_unlock(&mutex_s);
+    }
+
+    if (last_char == 't' || last_char == 'T') {
+        pthread_mutex_lock(&mutex_t);
+        count_ends_with_t++;
+        pthread_mutex_unlock(&mutex_t);
+    }
+
+    pthread_exit(NULL);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <word1> <word2> ... <wordN>\n", argv[0]);
+        return 1;
+    }
+
+    pthread_t threads[argc - 1];
+    pthread_mutex_init(&mutex_s, NULL);
+    pthread_mutex_init(&mutex_t, NULL);
+
+    for (int i = 1; i < argc; i++) {
+        pthread_create(&threads[i - 1], NULL, check_word, (void *)argv[i]);
+    }
+
+    for (int i = 1; i < argc; i++) {
+        pthread_join(threads[i - 1], NULL);
+    }
+
+    pthread_mutex_destroy(&mutex_s);
+    pthread_mutex_destroy(&mutex_t);
+
+    printf("Words ending with 's': %d\n", count_ends_with_s);
+    printf("Words ending with 't': %d\n", count_ends_with_t);
+
+    return 0;
+}
+
+
+-----------------------------
+
+thread lab 12 diana perta
+
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+
+//. Write a program that creates 5 threads and had 3 global
+//variables v5, v2, v3. Each thread generates a random number and:
+//- if the number is multiple of 2 increments v2
+//- if the number is multiple of 3, increments v3
+//- if the number is multiple of 5 increments v5
+
+//The number can be a multiple of more numbers (ex. for 10 we will
+//increment both V2 and V5)
+//
+//Threads print the generated numbers and stop when 30 numbers
+//have been generated.
+
+//The main program prints the 3 global variables.
+//.!!! Use mutex for synchronisation
+
+//#define count 5
+//#define limita 30
+
+int v2=0,v3=0,v5=0;
+int numere = 0;
+pthread_t t[5];
+int tid[5];
+
+
+pthread_mutex_t mtx1;
+pthread_mutex_t mtx2;
+pthread_mutex_t mtx3;
+pthread_mutex_t mtx4;
+
+
+
+void* generator_numar(void* arg){
+        int nrid=*(int*)arg;
+        while(1)
+        {
+                pthread_mutex_lock(&mtx1);
+                numere++;
+                if (numere>30) {
+                        pthread_mutex_unlock(&mtx1);
+                        break;
+                }
+                pthread_mutex_unlock(&mtx1);
+
+ //srand(time(NULL) + nrid);
+
+                int num=rand() % 100;
+                if (num % 2 == 0)
+                {
+                        pthread_mutex_lock(&mtx2);
+                        v2++;
+                        printf("TID: %d  v2 %d : Numar: %d \n",nrid, v2,num);
+                        pthread_mutex_unlock(&mtx2);
+
+                }
+                if (num % 3 == 0)
+                {
+                         pthread_mutex_lock(&mtx3);
+                         v3++;
+                         printf("TID: v3 %d : Numar: %d \n",v3,num);
+                         pthread_mutex_unlock(&mtx3);
+                }
+                if (num % 5 == 0)
+                {
+                         pthread_mutex_lock(&mtx4);
+                         v5++;
+                         printf("TID: v5 %d : Numar: %d \n",v5,num);
+                         pthread_mutex_unlock(&mtx4);
+                }
+                pthread_mutex_unlock(&mtx1);
+
+        }
+        pthread_exit(NULL);
+}
+
+int main() {
+//int i
+    pthread_mutex_init(&mtx1, NULL);
+    pthread_mutex_init(&mtx2, NULL);
+    pthread_mutex_init(&mtx3, NULL);
+    pthread_mutex_init(&mtx4, NULL);
+
+    for(int i=0; i < 5; i++){
+        tid[i]=i;
+    }
+
+    for (int i = 0; i < 5; i++) {
+        pthread_create(&t[i], NULL, generator_numar, &tid[i]);
+    }
+
+    for (int i = 0; i < 5; i++) {
+        pthread_join(t[i], NULL);
+    }
+
+    pthread_mutex_destroy(&mtx1);
+    pthread_mutex_destroy(&mtx2);
+    pthread_mutex_destroy(&mtx3);
+    pthread_mutex_destroy(&mtx4);
+
+    printf("v2 = %d, v3 = %d, v5 = %d\n", v2, v3, v5);
+
+    return 0;
+}
+
+-----------------------------
+boltz thread
+
+#include <stdio.h>
+#include <pthread.h>
+#include <stdlib.h>
+
+
+
+// joc boltz cu 10 threaduri
+//Implementati jocul boltz folosing 10 theaduri.
+//Se porneste de la o valoare de o cifra, variabila globala N.
+//Fiecare thread incrementeaza variabila N si afiseaza fie valoarea ei,
+ //fie boltz (daca numarul este divizibil cu 7 sau are cifra 7). Threadurile
+//vor avea acces la variabila N in ordine aleatoare, si vor continua jocul
+//pana cand N ajunge la valoarea 50.
+
+int n=5;
+pthread_t t[10];
+int tid[10];
+
+pthread_mutex_t m;
+
+int boltz(int n){
+  if(n%7==0)
+        return 1;
+  if(n%10==7)
+        return 1;
+  if(n/10==7)
+        return 1;
+  return 0;
+
+}
+
+
+
+void* joaca (void * id) {
+        int nrth=*(int*)id;
+        while (n<50) {
+        pthread_mutex_lock (&m); // dam lock
+        n++;
+}
+        if (n>50)
+     {
+        pthread_mutex_unlock (&m);
+        break;
+     }
+        if (boltz(n))
+        printf("TID %d: Boltz \n", nrth);
+else
+        printf("TID %d %d\n", nrth, n);
+
+        pthread_mutex_unlock (&m); //dam unlock
+
+}
+   pthread_exit(NULL);
+}
+
+int main(){
+        int i;
+        pthread_mutex_init(&m, NULL);
+        for (i=0; i<10; i++)
+                tid[i]=i;
+        for (i=0; i<10; i++)
+                pthread_create(&t[i], NULL, joaca, &tid[i]);
+        for (i=0; i<10; i++)
+                pthread_join(t[i], NULL);
+pthread_mutex_destroy(&m);
+return 0;
+}
+
+
+--------------------------------------------------------------
+
+
+
+//3/. Write a program that creates 20 threads, 
+//giving each thread a string as parameter. 
+//Each thread will count and add to the global 
+//variables v and n as follows: the number of vowels contained 
+//by the string added to v, and the number of digits contained 
+//in the string added to n. 
+//Synchronize threads using mutex.
+
+Scrieti un program C care primeste ca argumente in linia de comanda stringuri de maxim 30 de caractere. Pentru fiecare parametru, se creeaza un thread care numara cate vocale si cate cifre (0-9) caractere exista in acel string, apoi actualizeaza una sau mai multe variabile globala care contorizeaza numarul total de vocale si cifre din toate stringurile primite ca si parametri. La final programul afiseaza pentru fiecare string si per total numarul de vocale si cifre din stringurile parametri.
+
+
+
+
+------------------------
+
+
+
+THREAD CU ARGUMENT PAIR
+
+//4.  C program receives command line args pairs of numbers, 
+//and creates for each pair a thread that checks if the two numbers are 
+//relatively prime (gcd=1), incrementing a global variable. 
+//The program prints at the end how many relatively prime pairs have been found 
+//and the respective pairs.
+
+//(you can use atoi() )
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+int relatively_prime_count = 0;
+pthread_mutex_t mutex;
+
+int gcd(int a, int b) {
+    while (b != 0) {
+        int temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
+
+void *check_relatively_prime(void *arg) {
+    int *pair = (int *)arg;
+    int num1 = pair[0];
+    int num2 = pair[1];
+
+    if (gcd(num1, num2) == 1) {
+        pthread_mutex_lock(&mutex);
+        relatively_prime_count++;
+        pthread_mutex_unlock(&mutex);
+        printf("(%d, %d) is relatively prime.\n", num1, num2);
+    }
+
+    pthread_exit(NULL);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 3 || argc % 2 != 1) {
+        fprintf(stderr, "Usage: %s <num1> <num2> <num3> <num4> ...\n", argv[0]);
+        return 1;
+    }
+
+    pthread_t threads[(argc - 1) / 2];
+    pthread_mutex_init(&mutex, NULL);
+
+    for (int i = 1; i < argc; i += 2) {
+        int pair[2];
+        pair[0] = atoi(argv[i]);
+        pair[1] = atoi(argv[i + 1]);
+        pthread_create(&threads[(i - 1) / 2], NULL, check_relatively_prime, (void *)pair);
+    }
+
+    for (int i = 0; i < (argc - 1) / 2; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    pthread_mutex_destroy(&mutex);
+
+    printf("Number of relatively prime pairs found: %d\n", relatively_prime_count);
+
+    return 0;
+}
+
+
+--------------------------------------------------------------
+
+
+THREAD PAIR DE STRINGURI si verifica daca sunt identice
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <string.h>
+
+int identical_pair_count = 0;
+pthread_mutex_t mutex;
+
+void *check_identical_pairs(void *arg) {
+    char **pair = (char **)arg;
+    char *str1 = pair[0];
+    char *str2 = pair[1];
+    
+    if (strcmp(str1, str2) == 0) {
+        pthread_mutex_lock(&mutex);
+        identical_pair_count++;
+        pthread_mutex_unlock(&mutex);
+        printf("(%s, %s) are identical.\n", str1, str2);
+    }
+
+    pthread_exit(NULL);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 3 || argc % 2 != 1) {
+        fprintf(stderr, "Usage: %s <str1> <str2> <str3> <str4> ...\n", argv[0]);
+        return 1;
+    }
+
+    pthread_t threads[(argc - 1) / 2];
+    pthread_mutex_init(&mutex, NULL);
+
+    for (int i = 1; i < argc; i += 2) {
+        char *pair[2];
+        pair[0] = argv[i];
+        pair[1] = argv[i + 1];
+        pthread_create(&threads[(i - 1) / 2], NULL, check_identical_pairs, (void *)pair);
+    }
+
+    for (int i = 0; i < (argc - 1) / 2; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    pthread_mutex_destroy(&mutex);
+
+    printf("Number of identical pairs found: %d\n", identical_pair_count);
+
+    return 0;
+}
+
+
+LAB 13 FULGA
+
+Grupati-va in echipe de cate 2 studenti: unul implementeaza programul 
+folosind threaduri
+folosind procese.
+
+Programul primeste in linia de comanda doua numere: N si M, numere intregi.
+
+Afisati timpul in care programul calculeaza de N ori, suma numerelor de la 1 la M.
+
+Rezolvati programul in doua variante:
+
+1. Folosind threaduri: creati N threaduri, fiecare calculand suma de la 1 la M.
+
+2. Folosind procese: creati N procese, fiecare calculand suma de la 1 la M.
+
+Comparati timpii de executie ale celor doua variante folosind diverse valori pt N si M.
+
+
+
+
+PB LAB 13
+===========================================
+ 
+
+METODA 1 PROCESE + PIPE
+
+ #include <unistd.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <sys/wait.h>
+
+long sum_of_numbers(int m) {
+    long sum = 0;
+    for (int i = 1; i <= m; i++) {
+        sum += i;
+    }
+    return sum;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        fprintf(stderr, "Ne trebuie 3 parametri! \n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    int N = atoi(argv[1]);
+    int M = atoi(argv[2]);
+
+//    time_t start = time(NULL);
+
+    struct timespec start,end;
+   clock_gettime(CLOCK_MONOTONIC, &start);
+
+    for (int i = 0; i < N; i++) {
+        int pid = fork(); //cream N procese
+
+        if(pid<0) { perror("eroare fork!"); exit(1);}
+
+        else if (pid == 0) {
+            // Proces copil
+            long result = sum_of_numbers(M);
+             printf("suma: %ld\n", result);
+            exit(0);
+        }
+    }
+
+    // Parinte
+
+    for (int i = 0; i < N; i++) {
+        wait(NULL);
+    }
+
+ clock_gettime(CLOCK_MONOTONIC, &end);
+double timp = (end.tv_sec - start.tv_sec)+ ( end.tv_nsec - start.tv_nsec)/1e9;
+printf("timp: %f secunde\n", timp);
+
+    //time_t end = time(NULL);
+    //double elapsed = difftime(end, start);
+
+//    printf("Time elapsed: %.2f seconds.\n", elapsed);
+
+    return 0;
+}
+
+
+--------------------------------------------------------------------
+
+
+METODA 2 DARIUS THREADS
+
+ #include <pthread.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdio.h>
+int n,m;
+
+
+void* calcsum() {
+        int sum=0;
+        for(int i=1; i<=m; i++){
+                sum+=i;
+        }
+        return NULL;
+
+}
+
+int main(int argc, char ** argv)
+{
+
+  n=atoi(argv[1]);
+ pthread_t t[n];
+
+ clock_t start, end;
+ double time;
+
+ m=atoi(argv[2]);
+
+ printf("n = %d, m = %d \n", n,m);
+ int i;
+
+ long long int* suma=0;
+
+ start=clock();
+
+ for(int i=0; i<n; i++) {
+   pthread_create(&t[i], NULL, calcsum,NULL);
+}
+
+ for(int i=0; i<n; i++) {
+   pthread_join(t[i], NULL);
+}
+
+
+end=clock();
+time= ((double) (end-start))/CLOCKS_PER_SEC;
+
+printf("TIMP:  %10f\n", time);
+
+return 0;
+}
+
+
+

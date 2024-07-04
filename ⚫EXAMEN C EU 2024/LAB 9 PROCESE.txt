@@ -1,0 +1,7247 @@
+ 
+
+
+PROCESEEEEEEEEEEE
+
+ 
+#include <unistd.h> 
+pid_t fork(void)
+
+
+creates a new process by duplicating the calling process (parent process)
+
+§ the new process is called a child process and is an exact copy of the parent process
+
+§ the two processes continue their execution with the instructions that follow the fork() call
+
+§ the function returns:
+
+- 0 – in the child process
+
+- The identifier of the child process created (child PID) – the parent process
+
+- - 1 – if the call failed (error)
+
+§ the fork() function call can fail if:
+
+- there is not enough memory for the creation of the child process
+
+- the number of total processes exceeds the maxim allowed limit
+
+examples: fork_1.c, fork_2.c, fork_3.c
+
+
+
+
+
+FUNCTIONS wait(), waitpid()
+
+§ prototypes:
+
+#include <sys/types.h> #include <sys/wait.h> pid_t wait(int *status); pid_t waitpid(pid_t pid, int *status, int options);
+
+§ wait() suspends the execution of the calling process until a child process terminates
+
+§ wait(&status) call is equivalent with waitpid(-1, &status, 0)
+
+§ waitpid() suspends the execution of the calling process until:
+
+- the child process specified with the argument pid finishes its execution
+
+- the child process specified with the argument pid was stopped by a signal
+
+- the child process specified with the argument pid was restarted by a signal
+
+§ the meaning of the values of the argument pid:
+
+pid Meaning
+
+< -1 Wait all child processes to finish for those with group ID (GID) equal with the absolute value of pid
+
+-1 Wait for all child processes to finish
+
+0 Wait for all child processes to finish for those with group ID (GID) equal with the GID of the parent process
+
+> 0 Wait for the process with PID specified to finish pid
+
+§ examples: fork_4.c, fork_5.c
+
+
+
+===========================================
+#include <stdio.h>
+#include <pthread.h>
+#include <stdlib.h>
+
+main.c                                                      
+#include<unistd.h>
+#include<stdio.h>
+int main(){
+        printf("start\n");
+        int a=2,b=3,c=5;
+        int p=fork();
+        printf("fulga\n");
+         printf("fulga: %d\n",p);
+        return 0;
+}
+
+ 
+
+
+======================================================================
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int main(int argc, char* argv[])
+{
+  int a=5;
+  int pid=fork(); //incercam sa cream un proces copil
+  if (pid==-1) // fork() failed
+ {
+   perror("fork() error\n");
+   exit(1);
+   //sau
+   //exit(EXIT_FAILURE);
+ }
+
+if (pid == 0) // in the child process
+{
+
+printf("[In CHILD] My PID is %d. My parent PID is %d.\n", getpid(), getppid());
+exit(EXIT_SUCCESS);
+//exit(0);
+
+
+}
+
+else // in the parent process
+
+
+{ printf("[In PARENT] My PID is %d. My child PID is %d.\n", getpid(), pid);
+    int status;
+    wait(&status);
+    // wait(0);
+}
+
+return 0;
+}
+
+===========================================
+
+
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main()
+{
+   printf("start \n");
+   int b=3,c=5;
+   int pid=fork();
+
+   if(pid<0)
+    {
+        perror("eroare la fork\n");
+        return 1;
+     }
+   if(pid==0) {
+        printf("copil\n");
+        return b+c;
+   }
+else
+{ int status; // int pt ca o sa avem returnat de primit 3+5
+  wait(&status); // asteptam dupa copil sa termine
+  status=WEXITSTATUS(status); // = 8
+  printf("am primit: %d\n", status);
+
+}
+printf("gataaaa \n");
+int d=b*c;
+int p = getpid();
+printf("pidul e: %d, b=%d, c=%d, d=%d\n", p,b,c,d);
+
+
+return 0;
+
+}
+
+======================================================================
+
+ 
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main()
+{
+   printf("start \n");
+   int a=2, b=3,c=5;
+   int pid=fork();
+
+   if(pid<0)
+    {
+        perror("eroare la fork\n");
+        //return 1;
+     }
+   if(pid==0) {
+        printf("copil\n");
+        a= b+c; // a=3+5=8
+   }
+else{
+printf("parinte \n");
+        b=a+c; } // b=2+5=7 // se face el primul
+c=a*b; // ambele procese executa liniile astea ultimele 3
+
+//  la parinte a ramane 2, iar b=7
+// c=a*b=2*7=14
+
+
+// la copil b ramane 3, a=8
+//  c=a*b=3*8=24
+
+
+int p = getpid();
+printf("pidul e: %d, a=%d, b=%d, c=%d\n", p,a,b,c);
+
+
+return 0;
+
+}
+
+//start
+//parinte
+//copil
+//pidul e: 13896, a=8, b=3, c=24
+//pidul e: 13895, a=2, b=7, c=14
+
+
+
+===========================================
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+int main()
+{ int p, i;
+
+ p=fork();
+ if (p == -1)
+
+
+{ perror("fork impossible!");
+
+ exit(1);}
+
+ if (p == 0)
+
+{ for (i = 0; i < 10; i++)
+        printf("Child: i=%d pid=%d, ppid=%d\n", i, getpid(), getppid()); exit(0);
+}
+
+else
+{ for (i = 0; i < 10; i++)
+        printf("Parent: i=%d pid=%d ppid=%d\n", i, getpid(), getppid()); wait(0);
+}
+
+printf("Finished; pid=%d ppid=%d\n", getpid(), getppid()); }
+
+===========================================
+
+
+PROBLEMA PARE IMPARE EU FACUTA PE PUTTY !!!!!!!!!!!!!!!
+
+
+
+c++
+atoi - ascii to integer
+itoa
+
+
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main(int argc, char* argv[])
+{
+ int pare=0, impare=0;
+ for(int i=1; i<argc; i++) // i=1 sa dam skip la program name
+ {
+   int nr = atoi(argv[i]);
+   int pid=fork();
+
+    if(pid<0) { perror ("eroare la fork!!\n"); }
+    if (pid==0) {
+       //return nr%2; //=0 par, =1 impar
+return (nr % 2 + 2) % 2; //pt nr negative
+
+}
+
+//varianta concurenta
+
+    else //parinte
+   {  int status;
+      wait(&status);
+      int result = WEXITSTATUS(status);
+      printf("pt nr = %d, avem %d\n", nr, result);
+      if (result == 0)
+                pare++;
+            else
+                impare++;
+
+    }
+
+
+ }
+
+-------------------------------------
+
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdlib.h> // pt atoi
+
+int main(int argc, char* argv[])
+{
+ int pare=0, impare=0;
+ for(int i=1; i<argc; i++) // i=1 sa dam skip la program name
+ {
+   int nr = atoi(argv[i]);
+   int pid=fork();
+
+    if(pid<0) { perror ("eroare la fork!!\n"); }
+    if (pid==0) {
+       //return nr%2; //=0 par, =1 impar
+return (nr % 2 + 2) % 2; //pt nr negative
+
+}
+}
+
+//varianta concurenta
+
+  //  else //parinte
+   //{  int status;
+     // wait(&status);
+      //int result = WEXITSTATUS(status);
+      //printf("pt nr = %d, avem %d\n", nr, result);
+      //if (result == 0)
+       //         pare++;
+         //   else
+          //      impare++;
+
+    //}
+
+
+// }
+
+
+ for(int i=1; i<argc; i++)
+{
+   int status;
+   wait(&status);
+   status=WEXITSTATUS(status);
+   if (status==0)//nr pare
+        pare++;
+   else if (status ==1)
+          impare++;
+}
+
+
+
+printf("pare: %d\n", pare);
+printf("impare: %d\n", impare);
+return 0;
+
+}
+
+
+
+===========================================
+denisa@DESKTOP-K5RTQGH:~/C/CPRACTIC$ gcc -Wall -g -o p3 p3.c
+denisa@DESKTOP-K5RTQGH:~/C/CPRACTIC$ ./p3
+[In PARENT] I started ...
+
+[In CHILD] I started...
+[In PARENT] My PID is 27077     Child PID is 27078
+[In CHILD] My PID is 27078      Parent PID is 27077
+[In CHILD] Sum: 20
+[In CHILD] I finished my job.
+
+[In PARENT] Child has finished with exit status: 5120
+[In PARENT] Sum from CHILD: 20
+[In PARENT] Final sum: 45
+[In PARENT] I finished.
+
+
+
+#include <sys/wait.h>
+
+#define MAX_LEN 10
+
+int main(int argc, char* argv[])
+{
+    int sum = 0;
+
+    int *numbers = (int*)malloc(MAX_LEN * sizeof(int));
+    if (numbers == NULL)
+    {
+        perror("malloc() error: ");
+        exit(EXIT_FAILURE);
+    }
+
+    int i;
+    for (i = 0; i < MAX_LEN; i++)
+        numbers[i] = i;
+
+
+    int pid = fork();
+    if (pid == -1)                      // fork() failed
+    {
+        perror("fork() error: ");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0)                       // in child process
+    {
+        printf("\n[In CHILD] I started...\n");
+        printf("[In CHILD] My PID is %d\tParent PID is %d\n", getpid(), getppid());
+
+        for (i = 0; i < MAX_LEN; i++)
+            if ( numbers[i] % 2 == 0 )
+                sum += numbers[i];
+
+        printf("[In CHILD] Sum: %d\n", sum);
+
+        printf("[In CHILD] I finished my job.\n");
+        exit(sum);
+    }
+    else                                // in parent process
+    {
+        printf("[In PARENT] I started ...\n");
+        printf("[In PARENT] My PID is %d\tChild PID is %d\n", getpid(), pid);
+
+        int status;
+        wait(&status);
+        printf("\n[In PARENT] Child has finished with exit status: %d\n", status);
+
+        sum = WEXITSTATUS(status);
+        printf("[In PARENT] Sum from CHILD: %d\n", sum);
+
+        for (i = 0; i < MAX_LEN; i++)
+            if ( numbers[i] % 2 == 1 )
+                sum += numbers[i];
+
+        printf("[In PARENT] Final sum: %d\n", sum);
+        printf("[In PARENT] I finished.\n");
+    }
+
+    return 0;
+}
+
+
+
+===================================
+
+
+denisa@DESKTOP-K5RTQGH:~/C/CPRACTIC$ ./p4
+[In CHILD] Sum: 3
+
+[In PARENT] Child has finished with exit status: 0
+[In PARENT] Sum: 8
+
+//
+// Using variables defined in parent process
+//
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main(int argc, char* argv[])
+{
+    int a[] = {1, 2, 3, 4};
+
+    int pid = fork();
+    if (pid == -1)                              // fork() failed
+    {
+        perror("fork() error: ");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0)                               // in child process
+    {
+        a[0] += a[1];
+        printf("[In CHILD] Sum: %d\n", a[0]);
+
+        exit(0);
+    }
+    else
+    {
+        a[2] += a[3];                           // in parent process
+
+        int status;
+        wait(&status);
+        printf("\n[In PARENT] Child has finished with exit status: %d\n", status);
+
+        a[0] += a[2];
+        printf("[In PARENT] Sum: %d\n", a[0]);
+    }
+
+    return 0;
+}
+
+
+
+
+
+
+
+===========================================
+
+PIPEEEEEEEEEEEEEEEEEEEEEEEE
+
+  
+PIPE FARA NUME
+Internal pipes: they are created and exist in the internal memory of the Unix operating system
+
+
+PIPE CU NUME = FIFO
+· External pipes (also called FIFOS): they are special files accessible in the files system; they are also called names pipes
+
+
+
+#include <unistd.h> int pipe(int *p);
+
+§ Where p – must be an int[2] array that will be updated by the function pipe with file descriptor values of the pipe ends:
+
+- P[0] reading end
+
+- P[1] writing end of the pipe
+the function returns:
+
+- 0 – in case of success
+
+- - 1 – if the call failed (error)
+
+
+
+
+
+
+
+
+PIPE URI FARA NUMEEEEEEEEEEEEEE
+
+
+
+EXERCITIUL 01
+
+ex1.c
+
+#include <unistd.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h> //pt exit
+
+
+
+int main(){
+  //  char string[]="fulga are lapte";
+    int fdpipe[2]; //vector cu 2 elemente, file descriptor pipe   write--------read  pipe
+// la 0 capat citim si la cap 1 scriem conventie
+  // pipe e unidirectional w--> read   pipe fara nume
+   pipe(fdpipe); //cream pipe
+
+//verificare status
+ int pid=fork(); //cream un proces
+ if(pid==0)
+{
+        //copil
+        char string[16]="fulga are lapte";
+        close(fdpipe[0]); //inchidem pipe ca nu are treaba cu citirea el doar scrie
+//int are 4 bytes
+        int n=strlen(string);       //nu sizeof
+        write(fdpipe[1],&n,sizeof(n)); //sizeof int sau sizeof n
+        write(fdpipe[1],string,n);   //string e vecgtor si vectorul se comporta ca un vector
+//si aici n u i mai dam adresa
+        close(fdpipe[1]);
+        exit(0); //inchidem procesul copi;
+}
+
+//doar parinte
+close(fdpipe[1]);
+//inainte sa citim stringul sa primim stringul ii luam lungimea
+int nrec=0; //nrecieve
+read(fdpipe[0],&nrec,sizeof(int));    //vream sa punem ceea ce citeste in nrec
+char* ps=(char*)malloc(sizeof(char)*nrec+1); //dimensiunea*nhr de elemente+1 null
+    //merge si ceva asa char ps[nrec] dae fiind pe stiva nu aceptac aloc dinamica/variabila >
+read(fdpipe[0],ps,nrec);
+ps[nrec]='\0'; //indexarea e de la 0, nu+1
+printf("am primit: %s\n",ps);
+return 0;
+
+//aici parintele nu asteapta nu avem wait pt ca sincronizarea e deja facuta la read
+}
+
+
+
+
+
+===========================================
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <string.h>
+
+int main()
+{
+   int fdpipe[2];
+   char string[30]="ana are mere";
+
+   if (pipe(fdpipe) == -1){
+      perror("Pipe failed");
+      exit(EXIT_FAILURE);
+}
+
+  int pid=fork();
+  if(pid == -1) {
+
+   perror("fork failed");
+   exit(EXIT_FAILURE);
+}
+
+if (pid==0)
+
+{
+   close(fdpipe[0]);
+
+   write(fdpipe[1], string, strlen(string)+1);
+
+   close(fdpipe[1]);
+
+  //exit(EXIT_SUCCES);
+   exit(0);
+
+}
+
+//parinte
+
+close(fdpipe[1]);
+
+char stringprimit[30];
+
+read(fdpipe[0], stringprimit, sizeof(stringprimit));
+
+printf("Parintele a primit: %s\n", stringprimit);
+
+close(fdpipe[0]);
+
+
+wait(0); // asteapta dupa copil sa termine
+
+
+return 0;
+}
+
+
+---------------
+sau varianta scriere lungime apoi valoare
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <string.h>
+
+int main()
+{
+   int fdpipe[2];
+   char string[30]="ana are mere";
+
+   if (pipe(fdpipe) == -1){
+      perror("Pipe failed");
+      exit(EXIT_FAILURE);
+}
+
+  int pid=fork();
+  if(pid == -1) {
+
+   perror("fork failed");
+   exit(EXIT_FAILURE);
+}
+
+if (pid==0)
+
+{
+   close(fdpipe[0]);
+
+   //write(fdpipe[1], string, strlen(string)+1);
+
+
+
+        int len = strlen(string) + 1;
+        write(fdpipe[1], &len, sizeof(len));
+        write(fdpipe[1], string, len);
+
+
+
+
+   close(fdpipe[1]);
+
+  //exit(EXIT_SUCCES);
+   exit(0);
+
+}
+
+//parinte
+
+close(fdpipe[1]);
+
+//char stringprimit[30];
+
+//read(fdpipe[0], stringprimit, sizeof(stringprimit));
+
+
+
+
+//////////
+
+
+    int len;
+    read(fdpipe[0], &len, sizeof(len));
+
+    // Alocarea unui buffer pentru a stoca string-ul primit
+    char stringprimit[30];
+
+    // Citirea string-ului din pipe
+    read(fdpipe[0], stringprimit, len);
+
+//////////////
+
+
+printf("Parintele a primit: %s\n", stringprimit);
+
+close(fdpipe[0]);
+
+
+
+
+return 0;
+}
+
+
+
+
+
+
+
+===========================================
+
+ 
+PIPE PRODUS 1 NUMERE
+EX REZOLVAT PROFAAAAAAAAAAA
+
+
+// un proces creeaza un proces copil caruia ii trimite 2 numere prin pipe
+//copilul trimite inapoi produsul lor
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+
+
+// un proces creeaza un proces copil caruia ii trimite 2 numere prin pipe
+//copilul trimite inapoi produsul lor
+
+int main(){
+
+ int p2c[2]; //parinte to copil
+ int c2p[2]; //copil to parinte
+//c2p[0], c2[1]
+//c2p[0] e fdescr care citeste din pipe
+//c2p[1] e fdescr care scrie pe pipe
+
+
+ pipe(p2c); //se creeaza un pipe unidirectional du 2 file descriptors
+ pipe(c2p);
+
+ int pid=fork();
+ if (pid==0)
+{
+  //proces copil
+  int n1,n2;
+  close(p2c[1]); // inchidem capatul de scriere ca nu scriem pe el
+  close(c2p[0]); // inch cap de citire pt ca nu citim din el
+
+  read(p2c[0], &n1, sizeof(int)); // citim nr din procesul parinte
+  read(p2c[0], &n2, sizeof(int));
+
+  printf("copilul a primit numerele %d si %d \n", n1,n2);
+
+  n1=n1*n2;
+  write(c2p[1], &n1, sizeof(int)); // copilul scrie produsul inapoi in procesul parinte
+  close(p2c[0]); // inchidem ce a ramas
+  close(c2p[1]);
+
+  exit(0);
+
+}
+
+
+//procesul parinte
+close(p2c[0]); //nenecesare parintele inchide capatul de citire pt ca nu citeste din el
+close(c2p[1]);
+
+int a=5,b=7,p;
+write(p2c[1], &a, sizeof(int)); // scriem [1] numerele catre procesul copil, pe care copilul le citeste
+write(p2c[1], &b, sizeof(int));
+
+read(c2p[0], &p, sizeof(int)); // parintele citeste rezultatul din copil
+
+printf("Parintele a primit produsul: %d \n", p);
+
+close(p2c[1]);
+close(c2p[0]);
+
+wait(0); // asteapta dupa copil sa termine
+
+return 0;
+}
+
+----------------------------------------------
+
+EX 2 REZOLVAT PROFA PIPE   eliminare prin pipe ultim caracter string
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <string.h>
+
+// un proces creeaza un proces copil caruia ii trimite un string prin pipe
+//copilul trimite inapoi stringul fara ultima litera
+
+int main(){
+
+ int p2c[2]; //parinte to copil
+ int c2p[2]; //copil to parinte
+ pipe(p2c);
+ pipe(c2p);
+
+ int pid=fork();
+ if (pid==0){
+  //proces copil
+  char cuv[30];
+  int len;
+
+  close(p2c[1]);
+  close(c2p[0]);
+
+  read(p2c[0], &len, sizeof(int));  // la stringuri intai citim lungimea
+  read(p2c[0], cuv, sizeof(char)*len); // apoi citim stringul efectiv
+
+  printf("copilul a primit numerele stringul %s \n", cuv);
+
+  len--; //scadem lungimea cuvantului
+  cuv[len-1]='\0';  //stergem ultima litera
+
+  write(c2p[1], &len, sizeof(int)); // scriem intai lungimea
+  write(c2p[1], cuv, sizeof(char)*len); // apoi scriem stringul efectiv
+
+
+  close(p2c[0]);
+  close(c2p[1]);
+
+  exit(0);
+
+}
+
+
+//procesul parinte
+close(p2c[0]);
+close(c2p[1]);
+
+
+printf("Introduceti cuv/propozitia: ");
+
+char cuv[30];
+scanf("%s", cuv);
+int len=strlen(cuv)+1;
+
+write(p2c[1], &len, sizeof(int));
+write(p2c[1], cuv, sizeof(char)*(len));
+
+read(c2p[0], &len, sizeof(int));
+read(c2p[0], cuv, sizeof(char)*(len));
+
+
+printf("Parintele a primit cuvantul: %s \n", cuv);
+
+close(p2c[1]);
+close(c2p[0]);
+
+wait(0);
+
+return 0;
+}
+
+
+===========================================
+
+PB 3 PDF PROFA LAB   SUMA A 2 NR PRIN PIPE
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+
+// un proces creeaza un proces copil caruia ii trimite 2 nr prin pipe
+//copilul trimite inapoi suma celor 2 nr
+
+ int main(){
+
+ int p2c[2]; //parinte to copil
+ int c2p[2]; //copil to parinte
+
+ int a,b,suma;
+
+ pipe(p2c);
+ pipe(c2p);
+
+ int pid=fork();
+ if (pid==0){
+
+ //proces copil
+
+
+ read(p2c[0], &a, sizeof(int));
+ read(p2c[0], &b, sizeof(int));
+
+ suma=a+b;
+
+write(c2p[1], &suma, sizeof(int));
+
+close(p2c[0]);
+close(p2c[1]);
+close(c2p[0]);
+close(c2p[1]);
+
+exit(0);
+}
+
+
+// procesul parinte
+a=3,b=7;
+
+write(p2c[1], &a, sizeof(int));
+write(p2c[1], &b, sizeof(int));
+
+read(c2p[0], &suma, sizeof(int));
+
+printf("%d + %d = %d\n",a,b,suma);
+
+
+close(p2c[0]);
+close(p2c[1]);
+close(c2p[0]);
+close(c2p[1]);
+
+wait(0);
+
+
+return 0;
+}
+
+
+-----------------------
+varianta ajustata
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+
+// un proces creeaza un proces copil caruia ii trimite 2 nr prin pipe
+//copilul trimite inapoi suma celor 2 nr
+
+int main(){
+
+ int p2c[2]; //parinte to copil
+ int c2p[2]; //copil to parinte
+
+ int a,b,suma;
+
+ pipe(p2c);
+ pipe(c2p);
+
+ int pid=fork();
+
+if (pid == -1) {
+        perror("Fork failed");
+        exit(EXIT_FAILURE);
+    }
+
+
+
+ if (pid==0){
+
+ //proces copil
+  close(p2c[1]); // Close write end in child
+  close(c2p[0]); // Close read end in child
+
+ read(p2c[0], &a, sizeof(int));
+ read(p2c[0], &b, sizeof(int));
+
+// de fapt cica inainte de read
+// dupa citire aici ar fi bine sa inchidem direct pipe ends
+// sa inchidem p2c[1] si c2p[0]
+
+ suma=a+b;
+
+write(c2p[1], &suma, sizeof(int));
+
+close(p2c[0]);
+//close(p2c[1]);
+//close(c2p[0]);
+close(c2p[1]);
+
+exit(0);
+}
+
+
+// procesul parinte
+
+
+   close(p2c[0]); // Close read end in parent
+    close(c2p[1]); // Close write end in parent
+
+a=3,b=7;
+
+write(p2c[1], &a, sizeof(int));
+write(p2c[1], &b, sizeof(int));
+
+// fix dupa write trebuie inchis p2c[0] si c2p[1]
+
+
+read(c2p[0], &suma, sizeof(int));
+
+printf("%d + %d = %d\n",a,b,suma);
+
+
+//close(p2c[0]);
+close(p2c[1]);
+close(c2p[0]);
+//close(c2p[1]);
+
+wait(0);
+
+
+return 0;
+}
+
+
+
+===========================================
+
+
+LAB 10 BOTA
+ 
+Dati maxim 30 de caractere: ana are mere si pere
+[P2] Am citit ana are mere si pere
+[P3] Am citit ana are mere si pere
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+#define MAX_SIZE 50
+
+int main(int argc, char *argv[])
+{
+        // creez pipe-urile
+        int pd12[2];  // comunicare parinte - copil 1
+        if (pipe(pd12) < 0)
+        {
+                perror("pipe()");
+                exit(1);
+        }
+
+        int pd13[2];
+        if (pipe(pd13) < 0)  // comunicare parinte - copil 2
+        {
+                perror("pipe()");
+                exit(1);
+        }
+
+        // creez primul copil (proces 2)
+        int p2 = fork();
+        if (p2 == -1)
+        {
+                perror("fork()");
+                exit(1);
+        }
+
+        // in procesul 2
+        if (p2 == 0)
+        {
+                close(pd12[1]);
+                close(pd13[1]);
+
+                char input[MAX_SIZE];
+                read(pd12[0], input, MAX_SIZE);
+                printf("[P2] Am citit %s\n", input);
+
+                close(pd12[0]);
+                close(pd13[0]);
+                exit(0);
+        }
+
+        // creez al doilea copil (proces 3)
+        int p3 = fork();
+        if (p3 == -1)
+        {
+                perror("fork()");
+                exit(1);
+        }
+
+        // in procesul 2
+        if (p3 == 0)
+        {
+                close(pd12[1]);
+                close(pd13[1]);
+
+                char input[MAX_SIZE];
+                read(pd13[0], input, MAX_SIZE);
+                printf("[P3] Am citit %s\n", input);
+
+                close(pd12[0]);
+                close(pd13[0]);
+                exit(0);
+        }
+
+        // in parinte
+
+        close(pd12[0]);
+        close(pd13[0]);
+
+        // citeste o linie de maxim 30 de caractere
+        char input[MAX_SIZE];
+        printf("Dati maxim 30 de caractere: ");
+        fgets(input, MAX_SIZE, stdin);
+
+        // scriu catre procesul 2
+        write(pd12[1], input, MAX_SIZE);
+
+        // scriu catre procesul 3
+        write(pd13[1], input, MAX_SIZE);
+
+        close(pd12[1]);
+        close(pd13[1]);
+
+        wait(NULL);
+        wait(NULL);
+
+        return 0;
+}
+
+===========================================
+ 
+FIFO = pipe cu nume
+
+-------------------------------------------------------------------------
+
+SUMA A 2 NR PRIN FIFO
+
+Comunicare între procese: Parintele trimite două numere catre procesul copil prin FiFo-ul "fp2c". Copilul citește aceste numere și calculează suma lor. Apoi, copilul trimite rezultatul înapoi procesului parinte prin FiFo-ul "fc2p".
+
+Accesarea FiFo-urilor prin descriptori de fișiere: FiFo-urile sunt accesate prin intermediul descriptorilor de fișiere returnați de funcția open.
+Ștergerea FiFo-urilor: La sfârșitul programului, FiFo-urile sunt șterse din sistemul de fișiere utilizând funcția unlink.
+
+#include <stdio.h>
+
+#include <sys/types.h>
+
+#include <unistd.h>
+
+#include <stdlib.h>
+
+#include <sys/wait.h>
+
+#include <sys/stat.h>
+
+#include <fcntl.h>
+
+//Parintele trimite 2 numere catre procesul copil.
+//Procesul copil calculeaza suma numerelor si o trimite catre procesul parinte prin FIFO.
+
+
+int main() {
+
+   mkfifo("fp2c",0666);
+   mkfifo("fc2p",0666);
+
+   int pid=fork();
+
+   if (pid==-1){
+        perror("Eroare fork");
+
+        exit(1);
+}
+
+   if (pid==0){
+    int p2c = open("fp2c",O_RDONLY); // ca copilul sa citeasca de la parinte
+    int c2p = open("fc2p",O_WRONLY); // ca copilul sa scrie catre parinte
+
+    int n1,n2;
+
+    read(p2c,&n1, sizeof(int)); // citire din parinte
+    read(p2c,&n2, sizeof(int));
+
+    close(p2c);
+    printf("Copil: Am primit numerele %d si %d \n", n1, n2);
+
+    n1+=n2;
+    write(c2p, &n1, sizeof(int)); // copil write catre parinte
+    close(c2p);
+
+    exit(0);
+
+}
+
+//procesul parinte
+int a=10,b=20;
+int p2c=open("fp2c", O_WRONLY); // ca sa facem write catre copil
+int c2p=open("fc2p", O_RDONLY); // ca parintele sa faca read din copil
+
+
+
+write(p2c,&a, sizeof(int)); //parintele trimite nr 1
+
+write(p2c, &b, sizeof(int)); // si nr 2
+
+close(p2c);
+
+read(c2p, &a, sizeof(int)); // parintele citeste rez suma din copil
+
+printf("Parinte: Suma numerelor este %d \n ", a);
+
+close(c2p);
+
+wait(0);
+
+unlink("fp2c");
+unlink("fc2p");
+
+return 0;
+}
+
+
+
+-------------------------------------------------------------------------
+
+
+ALTE EXERCITII PIPE
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-------------------------------------------------------------------------
+
+
+PARTE DARIUS fifo read
+
+#include <unistd.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+
+
+int main(int argc, char ** argv)
+{
+
+  mkfifo("fifo.tmp",0777);
+
+ int fd=open("fifo.tmp",O_RDONLY);
+ int size=0;
+ read(fd, &size, sizeof(int));
+
+ char*string=(char*)malloc(sizeof(char)*(size+1));
+
+ read(fd, string, size);
+
+ printf("Am primit: %s\n",string);
+
+ close(fd);
+
+ return 0;
+
+}
+
+-------------------------------------------------------------------------
+
+
+PARTE VST fifo write
+
+
+
+
+
+
+
+
+
+
+
+-------------------------------------------------------------------------
+ 
+
+
+
+ 
+
+
+
+====================================================
+
+THREADS
+
+
+Threadurile ruleaza fire de executie concurente in cadrul aceluiasi process. 
+Avantajul este ca threadurile au cateva resurse commune in cadrul procesului 
+(variabile globale, zona de heap, descriptori de fisiere), facand comunicarea mai usoara intre threaduri.
+
+
+#include <stdio.h> 
+#include <pthread.h> 
+#include <stdlib.h
+
+void * thread1() { while(1){ printf("Hello!!\n"); } }
+
+void * thread2() { while(1){ printf("How are you?\n"); } }
+
+int main() { int status; pthread_t tid1,tid2;
+
+pthread_create(&tid1,NULL,thread1,NULL);
+pthread_create(&tid2,NULL,thread2,NULL);
+pthread_join(tid1,NULL);
+pthread_join(tid2,NULL);
+return 0; }
+
+
+
+
+=====================================================
+
+
+
+PROGRAMARE C
+
+#include <stdio.h>
+
+
+//argv[0] will be ./1
+//argv[1] will be file1.txt
+// deci argc = 2
+
+int main(int argc, char** argv)
+{
+        if (argc !=2) {
+        fprintf(stderr, "Ne trebuie nume file %s", argv[0]);
+        return 1;
+        }
+
+        FILE *file = fopen(argv[1],"r");
+        if (file == NULL) {
+                perror("Eroare la deschidere fisier");
+                return 1;
+        }
+
+        char ch;
+        while((ch = fgetc(file)) != EOF ) {
+                putchar(ch);
+        }
+
+        //sau asa
+
+
+        //char buf[1024];
+        //while (fgets(buf, sizeof(buf), file) != NULL) {
+        //printf("%s", buf);
+
+
+        fclose(file);
+
+
+//      printf("SALUT\n");
+        return 0;
+}
+
+
+
+===================================================
+
+#include <stdio.h>
+
+
+int main(int argc, char *argv[])
+{
+        char c;
+        char buffer[50];
+        char filename[] = "test.txt";
+
+        // open the file
+        FILE *file = fopen(filename, "r");
+        if (file == NULL)
+        {
+                perror("Error: ");
+                return 1;
+        }
+
+        // read the file content char by char
+        printf("CITIM FISIERUL char by char...\n");
+        while ((c = fgetc(file)) != EOF)
+        {
+                printf("%c", c);
+        }
+
+        rewind(file);
+        //fseek(file, 0L, SEEK_SET);
+
+        // read the file content using a buffer
+        printf("Trying to read file using a buffer...\n");
+        while (fgets(buffer, sizeof(buffer), file) != NULL)
+        {
+                printf("%s", buffer);
+        }
+
+        // close the file
+        fclose(file);
+
+        return 0;
+}
+
+
+===================================================
+
+
+citire si scriere in fisier
+
+#include <stdio.h>
+
+int main(int argc, char *argv[]) {
+    char input[100];
+
+    FILE *file = fopen("output.txt", "w");
+    if (file == NULL) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    printf("Enter text to write to file: ");
+    fgets(input, sizeof(input), stdin);
+
+    // Write input to the file
+    fprintf(file, "%s", input);
+
+    // Close the file
+    fclose(file);
+
+    printf("Data written to file successfully.\n");
+
+    return 0;
+}
+
+
+
+
+===================================================
+
+
+MATRICI SI ARRAY
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+
+//
+// Alocate the memory for a 2D array
+//
+void allocate_array(int rows, int cols, int **array)
+{
+	array = (int **)malloc(rows * sizeof(int *));
+	if (array == NULL)
+	{
+		perror("Error");
+		exit(EXIT_FAILURE);
+	}
+
+	for (int i = 0; i < rows; i++)
+	{
+		array[i] = (int *)malloc(cols * sizeof(int));
+		if (array[i] == NULL)
+		{
+			perror("Error");
+			exit(EXIT_FAILURE);
+		}
+	}
+}
+
+
+//
+// Print a 2D array line by line
+//
+void print_array(int rows, int cols, int **array)
+{
+	for (int i = 0; i < rows; i++)
+	{
+		printf ("( ");
+		for (int j = 0; j < cols; j++)
+		{
+			printf("%d ", array[i][j]);
+		}
+		printf(")\n");
+	}
+}
+
+
+int main(int argc, char *argv[])
+{
+	int nrows = 3;							// number of rows
+	int ncols = 4;							// number of columns
+	int **matrix;							// a 2D array
+
+	//allocate_array(nrows, ncols, matrix);
+
+	// alocate the memory for the matrix
+	matrix = (int **)malloc(nrows * sizeof(int *));
+	if (matrix == NULL)
+	{
+		perror("Error");
+		return 1;
+	}
+
+	for (int i = 0; i < nrows; i++)
+	{
+		matrix[i] = (int *)malloc(ncols * sizeof(int));
+		if (matrix[i] == NULL)
+		{
+			perror("Error");
+			return 1;
+		}
+	}
+
+	char c;
+	char filename[] = "matrix.txt";
+
+	// open the text file
+	FILE *file = fopen(filename, "r");
+	if (file == NULL)
+	{
+		perror("Error");
+		exit(EXIT_FAILURE);
+	}
+
+	int i = 0;
+	int j = 0;
+
+	// read the content of file char by char
+	while ((c = fgetc(file)) != EOF)
+	{
+		if (!isspace(c))
+		{
+			matrix[i][j] = (c - 48);
+
+			j++;
+			if (j == ncols)
+			{
+				i++;
+				j = 0;
+			}
+		}
+
+		if (i == nrows)
+			break;
+	}
+
+	// display the matrix
+	print_array(nrows, ncols, matrix);
+
+	// deallocate the memory used for matrix
+	for (int i = 0; i < nrows; i++)
+		free (matrix[i]);
+
+	free(matrix);
+
+	return 0;
+}
+
+
+
+
+
+
+ 
+
+
+
+
+// P1
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+
+#define FIFO1 "fifo1"
+#define FIFO2 "fifo2"
+#define MAX_LEN 1024
+
+int main() {
+    // Creează FIFO-urile
+    mkfifo(FIFO1, 0666);
+    mkfifo(FIFO2, 0666);
+
+    char input[MAX_LEN];
+    printf("Introduceti un sir de numere intregi separate prin spatii: ");
+    fgets(input, MAX_LEN, stdin);
+    input[strcspn(input, "\n")] = '\0'; // Elimină newline-ul de la final
+
+    // Trimite șirul de numere către P2
+    int fd1 = open(FIFO1, O_WRONLY);
+    if (fd1 == -1) {
+        perror("open FIFO1 for writing");
+        exit(1);
+    }
+    write(fd1, input, strlen(input) + 1);
+    close(fd1);
+
+    // Primește produsul de la P2
+    char product_str[MAX_LEN];
+    int fd2 = open(FIFO2, O_RDONLY);
+    if (fd2 == -1) {
+        perror("open FIFO2 for reading");
+        exit(1);
+    }
+    read(fd2, product_str, MAX_LEN);
+    close(fd2);
+
+    printf("Produsul elementelor din sir este: %s\n", product_str);
+
+    // Șterge FIFO-urile
+    unlink(FIFO1);
+    unlink(FIFO2);
+
+    return 0;
+}
+
+
+// P2
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+
+#define FIFO1 "fifo1"
+#define FIFO2 "fifo2"
+#define MAX_LEN 1024
+
+int main() {
+    // Primește șirul de numere de la P1
+    char input[MAX_LEN];
+    int fd1 = open(FIFO1, O_RDONLY);
+    if (fd1 == -1) {
+        perror("eroare fifo1");
+        exit(1);
+    }
+    read(fd1, input, MAX_LEN);
+    close(fd1);
+
+    // Calculează produsul numerelor
+    char *token = strtok(input, " ");
+    int product = 1;
+    while (token != NULL) {
+        product *= atoi(token);
+        token = strtok(NULL, " ");
+    }
+
+    // Afișează produsul folosind printf
+    printf("Produsul numerelor este: %d\n", product);
+
+    // Trimite rezultatul înapoi la P1 folosind dprintf
+    int fd2 = open(FIFO2, O_WRONLY);
+    if (fd2 == -1) {
+        perror("eroare fifo2");
+        exit(1);
+    }
+    dprintf(fd2, "%d", product);
+    close(fd2);
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+kevin 1
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#define MAX_NUM 100000
+
+int main(int argc, char* argv[]){
+
+        // deschidem fifo
+        int pd = open("fifo1", O_WRONLY);
+        if (pd == 0){
+                perror("open: ");
+                exit(1);
+        }
+	int n=0;
+	int k=0;
+	int sir[MAX_NUM];
+	printf("scrieti numere: \n");
+
+	while(1){
+		scanf("%d", &sir[k++]);
+		if (sir[k-1] == 0){
+			break;}
+	}
+	k-=2;
+	write(pd,&k,sizeof(int));
+while(k>=0){
+	n = sir[k--];
+	write(pd,&n,sizeof(int));
+}
+        close(pd);
+
+
+
+	pd = open("fifo1", O_RDONLY);
+        if (pd == 0){
+                perror("open: ");
+                exit(1);
+        }
+
+        int rez = 0;
+        read(pd,&rez,sizeof(int));
+        printf("rezultat = %d\n", rez);
+        close(pd);
+
+
+return 0;
+}
+
+
+
+
+
+
+kevin 2
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+int main(int argc, char* argv[]){
+
+        // deschidem fifo
+        int pd = open("fifo1", O_RDONLY);
+        if (pd == 0){
+                perror("open: ");
+                exit(1);
+        }
+
+        int k = 0;
+        read(pd,&k,sizeof(int));
+        int rez = 1;
+	int aux = 0;
+        while(k >=0){
+	read(pd,&aux,sizeof(int));
+	rez = rez*aux;
+	k--;
+	}
+	close(pd);
+
+	pd = open("fifo1", O_WRONLY);
+        if (pd == 0){
+                perror("open: ");
+                exit(1);
+        }
+        write(pd,&rez,sizeof(int));
+        close(pd);
+
+return 0;
+}
+
+
+
+
+===========
+
+
+P1: 
+
+#include <stdio.h> 
+
+#include <stdlib.h> 
+
+#include <string.h> 
+
+#include <unistd.h> 
+
+#include <fcntl.h> 
+
+#include <sys/stat.h> 
+
+  
+
+#define FIFO1 "fifo1david321" 
+
+#define FIFO2 "fifo2david321" 
+
+#define MAX_LEN 1024 
+
+  
+
+int main() { 
+
+ 
+
+    char input[MAX_LEN]; 
+
+    printf("Introduceti un sir de numere intregi separate prin spatii: "); 
+
+    fgets(input, MAX_LEN, stdin); 
+
+    input[strcspn(input, "\n")] = '\0'; // Elimină newline-ul de la final 
+
+  
+
+    // Trimite șirul de numere către P2 
+
+    int fd1 = open(FIFO1, O_WRONLY); 
+
+    if (fd1 == -1) { 
+
+        perror("open FIFO1 for writing"); 
+
+        exit(EXIT_FAILURE); 
+
+    } 
+
+    write(fd1, input, strlen(input) + 1); 
+
+    close(fd1); 
+
+  
+
+    // Primește produsul de la P2 
+
+    char product_str[MAX_LEN]; 
+
+    int fd2 = open(FIFO2, O_RDONLY); 
+
+    if (fd2 == -1) { 
+
+        perror("open FIFO2 for reading"); 
+
+        exit(EXIT_FAILURE); 
+
+    } 
+
+    read(fd2, product_str, MAX_LEN); 
+
+    close(fd2); 
+
+  
+
+    printf("Produsul elementelor din sir este: %s\n", product_str); 
+
+  
+
+    return 0; 
+
+} 
+
+ 
+
+P2: 
+
+#include <stdio.h> 
+
+#include <stdlib.h> 
+
+#include <string.h> 
+
+#include <unistd.h> 
+
+#include <fcntl.h> 
+
+#include <sys/stat.h> 
+
+  
+
+#define FIFO1 "fifo1david321" 
+
+#define FIFO2 "fifo2david321" 
+
+#define MAX_LEN 1024 
+
+  
+
+int main() { 
+
+    // Primește șirul de numere de la P1 
+
+    char input[MAX_LEN]; 
+
+    int fd1 = open(FIFO1, O_RDONLY); 
+
+    if (fd1 == -1) { 
+
+        perror("open FIFO1 for reading"); 
+
+        exit(EXIT_FAILURE); 
+
+    } 
+
+    read(fd1, input, MAX_LEN); 
+
+    close(fd1); 
+
+  
+
+    // Calculează produsul numerelor 
+
+    char *token = strtok(input, " "); 
+
+    long long product = 1; 
+
+    while (token != NULL) { 
+
+        product *= atoi(token); 
+
+        token = strtok(NULL, " "); 
+
+    } 
+
+  
+
+    // Trimite rezultatul înapoi la P1 
+
+    char product_str[MAX_LEN]; 
+
+    snprintf(product_str, MAX_LEN, "%lld", product); 
+
+    int fd2 = open(FIFO2, O_WRONLY); 
+
+    if (fd2 == -1) { 
+
+        perror("open FIFO2 for writing"); 
+
+        exit(EXIT_FAILURE); 
+
+    } 
+
+    write(fd2, product_str, strlen(product_str) + 1); 
+
+    close(fd2); 
+
+  
+
+    return 0; 
+
+} 
+
+
+
+
+
+
+#include <stdio.h>  
+
+#include <stdlib.h> 
+
+#include <unistd.h> 
+
+#include <string.h> 
+
+#include <ctype.h> 
+
+#include <sys/wait.h> 
+
+ 
+
+#define MAX_STRING_LENGTH 21 
+
+#define STOP_STRING "stop" 
+
+ 
+
+int count_vowels(const char *str){ 
+
+        int count = 0; 
+
+        for(int i=0;str[i]!='\0';i++){ 
+
+                char c = tolower(str[i]); 
+
+                if(c=='a' || c=='e' || c=='i' || c=='o' || c=='u'){ 
+
+                        count++; 
+
+                } 
+
+        } 
+
+        return count; 
+
+} 
+
+ 
+
+int main(){ 
+
+        int pipeC1_C2[2], pipeC2_C1[2]; 
+
+        pid_t pid1, pid2; 
+
+ 
+
+        if(pipe(pipeC1_C2) == -1 || pipe(pipeC2_C1) == -1){ 
+
+                perror("Pipe creation failed"); 
+
+                exit(EXIT_FAILURE); 
+
+        } 
+
+ 
+
+        if((pid1 = fork()) == -1){ 
+
+                perror("Fork failed"); 
+
+                exit(EXIT_FAILURE); 
+
+        } 
+
+ 
+
+        if(pid1 == 0){ 
+
+                close(pipeC1_C2[0]); 
+
+                close(pipeC2_C1[1]); 
+
+ 
+
+                char input[MAX_STRING_LENGTH]; 
+
+                int vowel_count; 
+
+ 
+
+                while(1){ 
+
+    printf("Enter a string (or 'stop' to end): "); 
+
+                        fgets(input, MAX_STRING_LENGTH, stdin); 
+
+                        input[strcspn(input, "\n")] = '\0'; 
+
+ 
+
+                        write(pipeC1_C2[1], input, strlen(input)+1); 
+
+ 
+
+                        if(strcmp(input, STOP_STRING) == 0){ 
+
+                                break; 
+
+                        } 
+
+ 
+
+                        read(pipeC2_C1[0], &vowel_count, sizeof(int)); 
+
+                        printf("Number of vowels: %d \n", vowel_count); 
+
+                } 
+
+ 
+
+                close(pipeC1_C2[1]); 
+
+                close(pipeC2_C1[0]); 
+
+                exit(EXIT_SUCCESS); 
+
+        }else{ 
+
+                if((pid2 = fork())==-1){ 
+
+                        perror("Fork failed"); 
+
+                        exit(EXIT_FAILURE); 
+
+                } 
+
+ 
+
+                if(pid2 == 0){ 
+
+                        close(pipeC1_C2[1]); 
+
+                        close(pipeC2_C1[0]); 
+
+ 
+
+                        char input[MAX_STRING_LENGTH]; 
+
+                        int vowel_count; 
+
+ 
+
+                        while(1){ 
+
+                                read(pipeC1_C2[0], input, MAX_STRING_LENGTH); 
+
+ 
+
+                                if(strcmp(input, STOP_STRING) == 0){ 
+
+                                        break; 
+
+                                } 
+
+ 
+
+                                vowel_count = count_vowels(input); 
+
+ 
+
+                                write(pipeC2_C1[1], &vowel_count, sizeof(int)); 
+
+                        }  
+
+ 
+
+                        close(pipeC1_C2[0]); 
+
+                        close(pipeC2_C1[1]); 
+
+                        exit(EXIT_SUCCESS); 
+
+                }else{ 
+
+                        close(pipeC1_C2[1]); 
+
+                        close(pipeC1_C2[0]); 
+
+                        close(pipeC2_C1[1]); 
+
+                        close(pipeC2_C1[0]); 
+
+ 
+
+                        wait(NULL); 
+
+                        wait(NULL); 
+
+                } 
+
+        } 
+
+        return 0; 
+
+} 
+
+
+
+
+
+===================================================
+ 
+ 
+
+
+===============================================
+
+PIPE
+
+
+// asemantor cu bota PB 1 vocale numere
+ 
+//- creeaza 2 procese copil care comunica prin pipe
+
+//- proces A citeste de la tastatura o singura data un numar intreg si il trimite prin pipe 
+procesului b
+//
+- apoi citeste de la tastatura repetat numere intregi si le va trimite prin pipe procesului B, pana se introduce -1
+
+//Procesul B va detremina si va afisa doar acele numere care sunt divizori ai lui n
+
+
+./pr
+100
+
+20
+e divizor
+
+14
+nu e divizor
+
+-1  -> stop
+
+
+
+// CU FIFO CU 2 FORKURI!!!!!!!!!!!!!
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+
+int main(){
+
+
+//if (mkfifo("pififo", 0666) == -1) {
+  //      if (errno != EEXIST) {
+    //        perror("Error creating FIFO");
+      //      exit(1);
+        //}
+    //}
+
+
+int pid=fork();
+
+ if (pid==-1){
+        perror("Eroare fork");
+
+        exit(1);
+}
+
+if(pid==0)
+{
+   //copilul A
+
+  int fd=open("p1fifo",O_WRONLY);
+  if (fd == -1) {
+            perror("Eroare deschidere FIFO");
+            exit(1);
+        }
+
+ int n;
+
+  printf("Introduceti n: \n");
+  scanf("%d",&n);
+  write(fd,&n,sizeof(int));
+
+ int m;
+
+ while(1) {
+
+  printf("Introduceti sirul de numere pana la -1: \n");
+  scanf("%d",&m);
+  write(fd,&m,sizeof(int));
+
+ if(m==-1) {break;}
+
+}
+ close(fd);
+ exit(0);
+}
+
+int p2=fork();
+
+ if (p2==-1){
+        perror("Eroare fork");
+
+        exit(1);
+}
+
+if (p2==0){ //proces B
+int fd=open("p1fifo",O_RDONLY);
+
+if (fd == -1) {
+            perror("Eroare deschidere FIFO");
+            exit(1);
+        }
+
+int n;
+read(fd,&n,sizeof(int));
+int m;
+while(1){
+        read(fd,&m,sizeof(int));
+
+        if(m==-1) { break; }
+        else
+         {  if(n%m==0) {
+        printf("%d Este divizor \n", m);  }
+
+     else   printf("%d NU este divizor: \n", m);
+
+          }
+
+}
+ close(fd);
+ exit(0);
+}
+
+
+wait(0);
+wait(0);
+unlink("p1fifo");
+return(0);
+}
+
+
+
+-------------------------------
+
+FIFO 2 FORKURI DIVIZOR CITIRE DIN FISIER 
+
+echo "5 12 15 55 67 51 10" > fis.txt
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s filename\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    FILE *file = fopen(argv[1], "r");
+    if (!file) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    int pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) {
+        // Child process A
+        int fd = open("p3fifo", O_WRONLY);
+        if (fd == -1) {
+            perror("Error opening FIFO");
+            exit(EXIT_FAILURE);
+        }
+
+        int n;
+        fscanf(file, "%d", &n);
+        write(fd, &n, sizeof(int));
+
+        int m;
+        while (fscanf(file, "%d", &m) != EOF) {
+            write(fd, &m, sizeof(int));
+        }
+
+        close(fd);
+        exit(EXIT_SUCCESS);
+    }
+
+    int p2 = fork();
+    if (p2 == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (p2 == 0) {
+        // Child process B
+        int fd = open("p3fifo", O_RDONLY);
+        if (fd == -1) {
+            perror("Error opening FIFO");
+            exit(EXIT_FAILURE);
+        }
+
+        int n;
+        read(fd, &n, sizeof(int));
+
+        int m;
+        while (read(fd, &m, sizeof(int)) > 0) {
+            if (m == -1) {
+                break;
+            } else {
+                if (n % m == 0) {
+                    printf("%d Este divizor\n", m);
+                } else {
+                    printf("%d NU este divizor\n", m);
+                }
+            }
+        }
+
+        close(fd);
+        exit(EXIT_SUCCESS);
+    }
+
+    wait(NULL);
+    wait(NULL);
+
+    return 0;
+}
+-------------------------daca citim linie cu linie
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#define FIFO_NAME "p3fifo"
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s filename\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    FILE *file = fopen(argv[1], "r");
+    if (!file) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    int pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) {
+        // Child process A
+        int fd = open(FIFO_NAME, O_WRONLY);
+        if (fd == -1) {
+            perror("Error opening FIFO");
+            exit(EXIT_FAILURE);
+        }
+
+        int n;
+        fscanf(file, "%d", &n);
+        write(fd, &n, sizeof(int));
+
+        int m;
+        char line[100]; // Modificare: Definim o variabilă pentru a citi fiecare linie
+        while (fgets(line, sizeof(line), file) != NULL) { // Modificare: Citim linie cu linie
+            sscanf(line, "%d", &m); // Modificare: Extragem numărul din linie
+            write(fd, &m, sizeof(int));
+        }
+
+        close(fd);
+        exit(EXIT_SUCCESS);
+    }
+
+    int p2 = fork();
+    if (p2 == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (p2 == 0) {
+        // Child process B
+        int fd = open(FIFO_NAME, O_RDONLY);
+        if (fd == -1) {
+            perror("Error opening FIFO");
+            exit(EXIT_FAILURE);
+        }
+
+        int n;
+        read(fd, &n, sizeof(int));
+
+        int m;
+        while (read(fd, &m, sizeof(int)) > 0) {
+            if (m == -1) {
+                break;
+            } else {
+                if (n % m == 0) {
+                    printf("%d Este divizor\n", m);
+                } else {
+                    printf("%d NU este divizor\n", m);
+                }
+            }
+        }
+
+        close(fd);
+        exit(EXIT_SUCCESS);
+    }
+
+    wait(NULL);
+    wait(NULL);
+
+    return 0;
+}
+
+
+
+---------------------
+
+FIFO 2 FORKURI CMMDC
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+
+int gcd(int a, int b) {
+    while (b != 0) {
+        int t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
+}
+
+int main(int argc, char *argv[]){
+
+if (argc != 2) {
+        fprintf(stderr, "Usage: %s <N>\n", argv[0]);
+        exit(1);
+    }
+
+
+ int N = atoi(argv[1]);
+    const char *fifo_name = "p7fifo";
+
+    if (mkfifo(fifo_name, 0666) == -1) {
+        if (errno != EEXIST) {
+            perror("Error creating FIFO");
+            exit(1);
+        }
+    }
+
+
+int pid=fork();
+
+ if (pid==-1){
+        perror("Eroare fork proces A");
+
+        exit(1);
+}
+
+if(pid==0)
+{
+   //copilul A
+
+  int fd=open("p7fifo",O_WRONLY);
+  if (fd == -1) {
+            perror("Eroare deschidere FIFO");
+            exit(1);
+        }
+
+int m;
+ while(1) {
+
+  printf("Introduceti sirul de numere pana la -1: \n");
+  scanf("%d",&m);
+  write(fd,&m,sizeof(int));
+
+ if(m==-1) {break;}
+
+}
+ close(fd);
+ exit(0);
+}
+
+int p2=fork();
+
+ if (p2==-1){
+        perror("Eroare fork");
+
+        exit(1);
+}
+
+if (p2==0){ //proces B
+int fd=open("p7fifo",O_RDONLY);
+
+if (fd == -1) {
+            perror("Eroare deschidere FIFO");
+            exit(1);
+        }
+
+int m;
+while(1){
+        read(fd,&m,sizeof(int));
+
+        if(m==-1) { break; }
+        if (gcd(N, m) == 1) {
+                printf("Process B: %d has GCD 1 with %d\n", m, N);
+            } else {
+                printf("Process B: %d does not have GCD 1 with %d\n", m, N);
+            }
+
+}
+ close(fd);
+ exit(0);
+}
+
+
+wait(0);
+wait(0);
+unlink(fifo_name);
+return(0);
+}
+
+
+
+
+
+
+
+---------------
+
+
+CU PIPE CU 2 FORKURI!!!
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+
+int main(){
+
+int p12[2];
+
+//pipe(p12);
+
+    if (pipe(p12) == -1) {
+        perror("Error creating pipe");
+        exit(1);
+    }
+
+int pid=fork();
+
+ if (pid==-1){
+        perror("Eroare fork");
+
+        exit(1);
+}
+
+if(pid==0)
+{
+   //copilul A
+
+  close(p12[0]); //nu ne trebuie read la proc A
+
+  int n;
+
+  printf("Introduceti n: \n");
+  scanf("%d",&n);
+  write(p12[1],&n,sizeof(int));
+
+ int m;
+
+ while(1) {
+
+  printf("Introduceti sirul de numere pana la -1: \n");
+  scanf("%d",&m);
+  write(p12[1],&m,sizeof(int));
+
+ if(m==-1) {break;}
+
+}
+ close(p12[1]);
+ exit(0);
+}
+
+int p2=fork();
+
+ if (p2==-1){
+        perror("Eroare fork");
+
+        exit(1);
+}
+
+if (p2==0){ //proces B
+
+close(p12[1]);// nu ii trimitem inapoi cu write, doar cu printf
+
+int n;
+read(p12[0],&n,sizeof(int));
+int m;
+
+while(1){
+        read(p12[0],&m,sizeof(int));
+
+        if(m==-1) { break; }
+        else
+         {  if(m!=0 && n%m==0) {
+        printf("%d Este divizor \n", m);  }
+
+     else   printf("%d NU este divizor: \n", m);
+
+          }
+
+}
+ close(p12[0]);
+ exit(0);
+}
+
+close(p12[0]);
+close(p12[1]);
+
+wait(0);
+wait(0);
+return(0);
+}
+
+
+
+
+---------------------------------------
+
+// PRIN PIPE CU UN FORK
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+
+int main(){
+
+int p12[2];
+
+//pipe(p12);
+
+    if (pipe(p12) == -1) {
+        perror("Error creating pipe");
+        exit(1);
+    }
+
+int pid=fork();
+
+ if (pid==-1){
+        perror("Eroare fork");
+
+        exit(1);
+}
+
+if(pid==0)
+{
+   //copilul A
+
+close(p12[1]);// nu ii trimitem inapoi cu write, doar cu printf
+
+int n;
+read(p12[0],&n,sizeof(int));
+int m;
+
+while(1){
+        read(p12[0],&m,sizeof(int));
+
+        if(m==-1) { break; }
+        else
+         {  if(m!=0 && n%m==0) {
+        printf("%d Este divizor \n", m);  }
+
+     else   printf("%d NU este divizor: \n", m);
+
+          }
+
+}
+ close(p12[0]);
+ exit(0);
+}
+
+
+//
+else{ //in parinte citim nr N si lista de numere
+
+close(p12[0]); //nu ne trebuie read la proc A
+
+  int n;
+
+  printf("Introduceti n: \n");
+  scanf("%d",&n);
+  write(p12[1],&n,sizeof(int));
+
+ int m;
+
+ while(1) {
+
+  printf("Introduceti sirul de numere pana la -1: \n");
+  scanf("%d",&m);
+  write(p12[1],&m,sizeof(int));
+
+ if(m==-1) {break;}
+
+}
+ close(p12[1]);
+ wait(0); // dam wait aici dupa copil
+}
+
+return(0);
+}
+
+
+
+--------------------
+
+//prin PIPE CU UN FORK, COPILUL CITESTE, PARINTELE DA PRIN DACA E NR PRIM
+
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdbool.h>
+
+bool is_prime(int num) {
+    if (num <= 1) return false;
+    for (int i = 2; i <= num / 2; i++) {
+        if (num % i == 0) return false;
+    }
+    return true;
+}
+
+
+int main(){
+
+int p12[2];
+
+//pipe(p12);
+
+    if (pipe(p12) == -1) {
+        perror("Error creating pipe");
+        exit(1);
+    }
+
+int pid=fork();
+
+ if (pid==-1){
+        perror("Eroare fork");
+
+        exit(1);
+}
+
+if(pid==0)
+{
+   //copilul A
+
+close(p12[0]);// aici copilul CITESTE
+
+
+        int num;
+        while (1) {
+            printf("Child: Enter a number (-1 to exit): \n");
+            scanf("%d", &num);
+            write(p12[1], &num, sizeof(int));
+            if (num == -1) {
+                break;
+ }
+
+}
+ close(p12[0]);
+ exit(0);
+}
+
+
+//
+else{ //in parinte verifricam primalitatea
+
+ close(p12[1]); // Close the write end of the pipe
+
+        int num;
+        while (1) {
+            read(p12[0], &num, sizeof(int));
+            if (num == -1) {
+                break;
+            }
+
+            if (is_prime(num)) {
+                printf("Parent: %d is a prime number.\n", num);
+            } else {
+                printf("Parent: %d is not a prime number.\n", num);
+            }
+        }
+
+
+ close(p12[0]);
+ wait(0); // dam wait aici dupa copil
+}
+
+return(0);
+}
+
+
+
+
+------------------------------------------------
+
+
+////////////// prin fifo CU UN FORK
+
+ 
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+
+int main(){
+
+
+//if (mkfifo("pififo", 0666) == -1) {
+    //        perror("Error creating FIFO");
+      //      exit(1);
+    //}
+
+
+int pid=fork();
+
+ if (pid==-1){
+        perror("Eroare fork");
+
+        exit(1);
+}
+
+if(pid==0)
+{
+   //copilul A
+
+int fd=open("p1fifo",O_RDONLY);
+
+if (fd == -1) {
+            perror("Eroare deschidere FIFO");
+            exit(1);
+        }
+
+int n;
+read(fd,&n,sizeof(int));
+int m;
+while(1){
+        read(fd,&m,sizeof(int));
+
+        if(m==-1) { break; }
+        else
+         {  if(n%m==0) {
+        printf("%d Este divizor \n", m);  }
+
+     else   printf("%d NU este divizor: \n", m);
+
+          }
+
+}
+ close(fd);
+ unlink("p1fifo");
+ exit(0);
+}
+
+
+else{ //in parinte
+
+  int fd=open("p1fifo",O_WRONLY);
+  if (fd == -1) {
+            perror("Eroare deschidere FIFO");
+            exit(1);
+        }
+
+ int n;
+
+  printf("Introduceti n: \n");
+  scanf("%d",&n);
+  write(fd,&n,sizeof(int));
+
+ int m;
+
+ while(1) {
+
+  printf("Introduceti sirul de numere pana la -1: \n");
+  scanf("%d",&m);
+  write(fd,&m,sizeof(int));
+
+ if(m==-1) {break;}
+
+}
+
+ close(fd);
+ wait(0);
+ unlink("p1fifo");
+}
+
+
+return(0);
+}
+
+
+
+----------------------------------
+
+FIFO 2 COPII FORK CU CITIRE STRING
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+
+#define BUFFER_SIZE 256
+
+int nrvoc(char *str){
+  int nrvoc=0;
+    for(int i=0;i<strlen(str); i++)
+ {
+    if(strchr("AEIOUaeiou",str[i])!= NULL)
+         nrvoc++;
+ }
+ return nrvoc;
+
+}
+
+int main(){
+
+
+//if (mkfifo("pififo", 0666) == -1) {
+    //        perror("Error creating FIFO");
+      //      exit(1);
+    //}
+
+
+int pid=fork();
+
+ if (pid==-1){
+        perror("Eroare fork");
+
+        exit(1);
+}
+
+if(pid==0)
+{
+   //copilul A
+
+  int fd=open("p2fifo",O_WRONLY);
+  if (fd == -1) {
+            perror("Eroare deschidere FIFO");
+            exit(1);
+        }
+
+  char buffer[BUFFER_SIZE];
+
+ while(1) {
+
+  printf("Introduceti string si exit pt quit: \n");
+
+  fgets(buffer, BUFFER_SIZE, stdin);
+  buffer[strcspn(buffer, "\n")] = '\0';
+  // Remove newline character
+
+ if (strcmp(buffer, "exit") == 0) {
+                break;
+            }
+
+
+  write(fd,buffer,strlen(buffer)+1);
+
+
+}
+ close(fd);
+ exit(0);
+}
+
+int p2=fork();
+
+ if (p2==-1){
+        perror("Eroare fork");
+
+        exit(1);
+}
+
+if (p2==0){ //proces B
+
+int fd=open("p2fifo",O_RDONLY);
+
+if (fd == -1) {
+            perror("Eroare deschidere FIFO");
+            exit(1);
+        }
+
+ char buffer[BUFFER_SIZE];
+ while(1){
+
+ int bytesRead = read(fd, buffer, BUFFER_SIZE);
+            if (bytesRead == -1) {
+                perror("Error reading from fifo");
+                exit(1);
+            }
+            if (bytesRead == 0) {
+                break; // End of data
+            }
+            buffer[bytesRead] = '\0'; // Null-terminate the string
+
+       int nrvo=nrvoc(buffer);
+       printf("String: %s, nr vocale: %d\n", buffer, nrvo);
+
+}
+ close(fd);
+ exit(0);
+}
+
+
+wait(0);
+wait(0);
+return(0);
+}
+
+
+------------------------------
+
+
+PIPE 2 COPII FORK CITIRE STRINGURI 
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+
+#define BUFFER_SIZE 256
+
+int nrvoc(char *str){
+  int nrvoc=0;
+    for(int i=0;i<strlen(str); i++)
+ {
+    if(strchr("AEIOUaeiou",str[i])!= NULL)
+         nrvoc++;
+ }
+ return nrvoc;
+
+}
+
+int main(){
+
+int p12[2];
+
+//pipe(p12);
+
+    if (pipe(p12) == -1) {
+        perror("Error creating pipe");
+        exit(1);
+    }
+
+int pid=fork();
+
+ if (pid==-1){
+        perror("Eroare fork");
+
+        exit(1);
+}
+
+if(pid==0)
+{
+   //copilul A
+close(p12[0]);
+
+  char buffer[BUFFER_SIZE];
+
+ while(1) {
+
+  printf("Introduceti string si exit pt quit: \n");
+
+  fgets(buffer, BUFFER_SIZE, stdin);
+  buffer[strcspn(buffer, "\n")] = '\0';
+  // Remove newline character
+
+ if (strcmp(buffer, "exit") == 0) {
+                close(p12[1]); // Close write end
+                exit(0); // Exit the child process
+                break;
+            }
+
+
+  write(p12[1],buffer,strlen(buffer)+1);
+
+
+}
+ close(p12[1]);
+ exit(0);
+}
+
+int p2=fork();
+
+ if (p2==-1){
+        perror("Eroare fork");
+
+        exit(1);
+}
+
+if (p2==0){ //proces B
+
+
+ char buffer[BUFFER_SIZE];
+ while(1){
+
+ int bytesRead = read(p12[0], buffer, BUFFER_SIZE);
+            if (bytesRead == -1) {
+                perror("Error reading from fifo");
+                exit(1);
+            }
+            if (bytesRead == 0) {
+                break; // End of data
+            }
+            buffer[bytesRead] = '\0'; // Null-terminate the string
+
+       int nrvo=nrvoc(buffer);
+       printf("String: %s, nr vocale: %d\n", buffer, nrvo);
+
+}
+ close(p12[0]);
+ exit(0);
+}
+
+close(p12[0]);
+close(p12[1]);
+wait(0);
+wait(0);
+return(0);
+}
+
+
+
+
+--------------------
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+
+#define FIFO_NAME "p4fifo"
+
+int main() {
+    char initial[100];
+
+    printf("Introduceti sirul initial: ");
+    if (fgets(initial, sizeof(initial), stdin) == NULL) {
+        fprintf(stderr, "Error reading initial string from stdin\n");
+        exit(EXIT_FAILURE);
+    }
+    // Eliminam newline-ul de la finalul sirului initial
+    initial[strcspn(initial, "\n")] = '\0';
+
+    int pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) {
+        // Proces copil A
+        int fd = open(FIFO_NAME, O_WRONLY);
+        if (fd == -1) {
+            perror("Error opening FIFO");
+            exit(EXIT_FAILURE);
+        }
+
+        // Trimitem sirul initial catre procesul copil B
+        write(fd, initial, strlen(initial) + 1);
+
+        close(fd);
+        exit(EXIT_SUCCESS);
+    }
+
+    int p2 = fork();
+    if (p2 == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (p2 == 0) {
+        // Proces copil B
+        int fd = open(FIFO_NAME, O_RDONLY);
+        if (fd == -1) {
+            perror("Error opening FIFO");
+            exit(EXIT_FAILURE);
+        }
+
+        // Primim sirul initial de la procesul copil A
+        char received[100];
+        read(fd, received, sizeof(received));
+
+        // Numaram sirurile identice cu sirul initial
+        int count = 0;
+        char buffer[100];
+        printf("Introduceti lista de siruri (terminati introducerea cu 'stop'):\n");
+        while (1) {
+            if (fgets(buffer, sizeof(buffer), stdin) == NULL || strcmp(buffer, "stop\n") == 0) {
+                break;
+            }
+            char *token = strtok(buffer, " \n");
+            while (token != NULL) {
+                if (strcmp(token, received) == 0) {
+                    count++;
+                }
+                token = strtok(NULL, " \n");
+            }
+        }
+
+        printf("Numarul de siruri identice cu %s este: %d\n", received, count);
+
+        close(fd);
+        exit(EXIT_SUCCESS);
+    }
+
+    wait(NULL);
+    wait(NULL);
+
+    return 0;
+}
+
+--------------------------
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+
+#define FIFO_NAME "p5fifo"
+
+// Funcție pentru a număra vocalele și cifrele dintr-un șir
+void countVowelsAndDigits(char *line, int *vowels, int *digits) {
+    *vowels = 0;
+    *digits = 0;
+    for (int i = 0; line[i] != '\0'; i++) {
+        if (line[i] >= '0' && line[i] <= '9') {
+            (*digits)++;
+        } else if ((line[i] >= 'a' && line[i] <= 'z') || (line[i] >= 'A' && line[i] <= 'Z')) {
+            char c = tolower(line[i]);
+            if (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u') {
+                (*vowels)++;
+            }
+        }
+    }
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s filename\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    FILE *file = fopen(argv[1], "r");
+    if (!file) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    int pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) {
+        // Proces copil A
+        int fd = open(FIFO_NAME, O_WRONLY);
+        if (fd == -1) {
+            perror("Error opening FIFO");
+            exit(EXIT_FAILURE);
+        }
+
+        char line[100];
+        while (fgets(line, sizeof(line), file) != NULL) {
+            // Trimitem fiecare linie catre procesul copil B
+            write(fd, line, strlen(line) + 1);
+        }
+
+        // Trimitem un mesaj special pentru a semnala sfarsitul transmisiei
+        write(fd, "STOP", strlen("STOP") + 1);
+
+        close(fd);
+        exit(EXIT_SUCCESS);
+    }
+
+    int p2 = fork();
+    if (p2 == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (p2 == 0) {
+        // Proces copil B
+        int fd = open(FIFO_NAME, O_RDONLY);
+        if (fd == -1) {
+            perror("Error opening FIFO");
+            exit(EXIT_FAILURE);
+        }
+
+        int vowels, digits;
+        char line[100];
+        while (1) {
+            // Primim fiecare linie trimisa de procesul copil A
+            read(fd, line, sizeof(line));
+
+            // Verificam daca am primit mesajul special de sfarsit
+            if (strcmp(line, "STOP") == 0) {
+                break;
+            }
+
+            // Numaram vocalele si cifrele din linie
+            countVowelsAndDigits(line, &vowels, &digits);
+            printf("Linia: %sVocale: %d, Cifre: %d\n", line, vowels, digits);
+        }
+
+        close(fd);
+        exit(EXIT_SUCCESS);
+    }
+
+    wait(NULL);
+    wait(NULL);
+
+    return 0;
+}
+
+----------
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_LINE_LENGTH 300
+
+int main(int argc, char *argv[]) {
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+        fprintf(stderr, "parametru invalid");
+        return 0;
+    }
+
+    char marca_max[100];
+    char model_max[100];
+    int cai_max = 0;
+    char line[MAX_LINE_LENGTH];
+    while (fgets(line, MAX_LINE_LENGTH, file)) {
+        char *marca = strtok(line, ",");
+        char *model = strtok(NULL, ",");
+        int cai = atoi(strtok(NULL, ","));
+
+        if (cai > cai_max) {
+            strcpy(marca_max, marca);
+            strcpy(model_max, model);
+            cai_max = cai;
+        }
+    }
+    printf("%s %s\n", marca_max, model_max);
+
+    fclose(file);
+    return 0;
+}
+
+
+
+-----------
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+
+#define FIFO_NAME "p4fifo"
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s filename\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    FILE *file = fopen(argv[1], "r");
+    if (!file) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Citirea șirului inițial
+    char initial[100];
+    if (fgets(initial, sizeof(initial), file) == NULL) {
+        fprintf(stderr, "Error reading initial string from file\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Eliminarea caracterului newline de la finalul șirului inițial
+    initial[strcspn(initial, "\n")] = '\0';
+
+    int pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) {
+        // Proces copil A
+        int fd = open(FIFO_NAME, O_WRONLY);
+        if (fd == -1) {
+            perror("Error opening FIFO");
+            exit(EXIT_FAILURE);
+        }
+
+        // Trimitem șirul inițial către procesul copil B
+        write(fd, initial, strlen(initial) + 1);
+
+        close(fd);
+        exit(EXIT_SUCCESS);
+    }
+
+    int p2 = fork();
+    if (p2 == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (p2 == 0) {
+        // Proces copil B
+        int fd = open(FIFO_NAME, O_RDONLY);
+        if (fd == -1) {
+            perror("Error opening FIFO");
+            exit(EXIT_FAILURE);
+        }
+
+        // Primim șirul inițial de la procesul copil A
+        char received[100];
+        read(fd, received, sizeof(received));
+
+        // Numărăm șirurile identice cu șirul inițial
+        int count = 0;
+        char buffer[100];
+        while (fgets(buffer, sizeof(buffer), file) != NULL) {
+            char *token = strtok(buffer, " \n");
+            while (token != NULL) {
+                if (strcmp(token, received) == 0) {
+                    count++;
+                }
+                token = strtok(NULL, " \n");
+            }
+        }
+
+        printf("Numarul de siruri identice cu %s este: %d\n", received, count);
+
+        close(fd);
+        exit(EXIT_SUCCESS);
+    }
+
+    wait(NULL);
+    wait(NULL);
+
+    return 0;
+}
+
+
+
+
+
+
+
+----------------------------------------
+rezolva cu fifo
+
+paramertru 
+
+nr N sir de numere
+5     12 15 55 67 51 10
+
+copil parinte
+
+
+parintele trimite la copil si nr N si lista de numere
+
+iar copilul da read si printeaza mesaj daca lista de numere are in compozitie cifra N
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+// Function to check if digit N is present in a number
+int digit_present(int number, int N) {
+    while (number > 0) {
+        if (number % 10 == N) {
+            return 1; // Return 1 if N is found in the number
+        }
+        number /= 10;
+    }
+    return 0; // Return 0 if N is not found in the number
+}
+
+int main() {
+    // Create the FIFO pipe
+    mkfifo("p1fifo", 0666);
+
+    int pid = fork();
+
+    if (pid == -1) {
+        perror("Error forking");
+        exit(1);
+    }
+
+    if (pid == 0) {
+        // Child process
+        int fd = open("p1fifo", O_RDONLY);
+        if (fd == -1) {
+            perror("Error opening FIFO in child");
+            exit(1);
+        }
+
+        int N;
+        read(fd, &N, sizeof(int)); // Read N from FIFO
+        int num;
+        printf("Numbers containing %d:\n", N);
+        while (read(fd, &num, sizeof(int)) > 0) {
+            if (num == -1) {
+                break; // Exit loop if -1 is read
+            }
+            if (digit_present(num, N)) {
+                printf("%d\n", num); // Print the number if N is found
+            }
+        }
+        close(fd);
+        exit(0);
+    } else {
+        // Parent process
+        int fd = open("p1fifo", O_WRONLY);
+        if (fd == -1) {
+            perror("Error opening FIFO in parent");
+            exit(1);
+        }
+
+        int N;
+        printf("Enter a digit (N): ");
+        scanf("%d", &N);
+        write(fd, &N, sizeof(int)); // Write N to FIFO
+
+        printf("Enter a list of numbers (-1 to finish):\n");
+        int num;
+        while (1) {
+            scanf("%d", &num);
+            write(fd, &num, sizeof(int)); // Write numbers to FIFO
+            if (num == -1) {
+                break; // Exit loop if -1 is entered
+            }
+        }
+        close(fd);
+    }
+
+    return 0;
+}
+
+
+
+-------------------------------------
+
+rezolva cu fifo
+
+paramertru 
+
+nr N sir stringuri
+5     aaaaa bvcc ana are meree
+
+
+copil parinte
+
+
+parintele trimite la copil si nr N si lista de stringuri
+
+iar copilul da read si printeaza mesaj daca ficare cuvant are un nr de vocale = N
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+
+#define MAX_LENGTH 100
+
+// Function to count the number of vowels in a string
+int count_vowels(const char *str) {
+    int count = 0;
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (strchr("aeiouAEIOU", str[i])) {
+            count++;
+        }
+    }
+    return count;
+}
+
+int main() {
+    // Create the FIFO pipe
+    mkfifo("p1fifo", 0666);
+
+    int pid = fork();
+
+    if (pid == -1) {
+        perror("Error forking");
+        exit(1);
+    }
+
+    if (pid == 0) {
+        // Child process
+        int fd = open("p1fifo", O_RDONLY);
+        if (fd == -1) {
+            perror("Error opening FIFO in child");
+            exit(1);
+        }
+
+        int N;
+        read(fd, &N, sizeof(int)); // Read N from FIFO
+        char word[MAX_LENGTH];
+        printf("Words with %d vowels:\n", N);
+        while (read(fd, word, MAX_LENGTH) > 0) {
+            if (strlen(word) == 0) {
+                break; // Exit loop if an empty string is read
+            }
+            if (count_vowels(word) == N) {
+                printf("%s\n", word); // Print the word if it has N vowels
+            }
+        }
+        close(fd);
+        exit(0);
+    } else {
+        // Parent process
+        int fd = open("p1fifo", O_WRONLY);
+        if (fd == -1) {
+            perror("Error opening FIFO in parent");
+            exit(1);
+        }
+
+        int N;
+        printf("Enter a number (N): ");
+        scanf("%d", &N);
+        write(fd, &N, sizeof(int)); // Write N to FIFO
+
+        printf("Enter a list of words (empty word to finish):\n");
+        char word[MAX_LENGTH];
+        while (1) {
+            getchar(); // Consume newline character left in buffer
+            fgets(word, MAX_LENGTH, stdin); // Read a word from stdin
+            word[strcspn(word, "\n")] = '\0'; // Remove newline character if present
+            write(fd, word, MAX_LENGTH); // Write the word to FIFO
+            if (strlen(word) == 0) {
+                break; // Exit loop if an empty string is entered
+            }
+        }
+        close(fd);
+    }
+
+    return 0;
+}
+
+-------------------------------------------
+
+
+
+
+---------------------------------------------------------------
+1
+
+rezolva cu fifo
+copil parinte
+parintele trimite cate o linie din fisier la copil
+
+
+
+problema
+fisier
+miere
+pere 
+banane
+ana
+maria
+
+
+sorteaza descrescator dupa numarul de litere
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <string.h>
+
+#define FIFO_FILE "myfifo"
+#define MAX_LINE_LENGTH 100
+
+// Funcție pentru a sorta descrescător după lungimea cuvintelor
+int compare(const void *a, const void *b) {
+    return strlen(*(const char **)b) - strlen(*(const char **)a);
+}
+
+int main() {
+    int fd;
+    pid_t pid;
+    char line[MAX_LINE_LENGTH];
+
+    // Creăm FIFO
+    mkfifo(FIFO_FILE, 0666);
+
+    // Creăm un proces copil
+    pid = fork();
+
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) { // Procesul copil
+        // Deschidem FIFO pentru citire
+        fd = open(FIFO_FILE, O_RDONLY);
+
+        if (fd == -1) {
+            perror("Error opening FIFO for reading");
+            exit(EXIT_FAILURE);
+        }
+
+        char lines[1000][MAX_LINE_LENGTH];
+        int line_count = 0;
+
+        // Citim liniile din FIFO
+        while (read(fd, line, MAX_LINE_LENGTH) > 0) {
+            strcpy(lines[line_count++], line);
+        }
+
+        // Sortăm liniile descrescător după lungimea cuvintelor
+        qsort(lines, line_count, sizeof(lines[0]), compare);
+
+        // Închidem FIFO pentru citire
+        close(fd);
+
+        // Deschidem FIFO pentru scriere
+        fd = open(FIFO_FILE, O_WRONLY);
+
+        if (fd == -1) {
+            perror("Error opening FIFO for writing");
+            exit(EXIT_FAILURE);
+        }
+
+        // Trimitem liniile sortate înapoi către procesul părinte
+        for (int i = 0; i < line_count; i++) {
+            write(fd, lines[i], strlen(lines[i]) + 1);
+        }
+
+        // Închidem FIFO pentru scriere
+        close(fd);
+
+        exit(EXIT_SUCCESS);
+    } else { // Procesul părinte
+        // Deschidem FIFO pentru scriere
+        fd = open(FIFO_FILE, O_WRONLY);
+
+        if (fd == -1) {
+            perror("Error opening FIFO for writing");
+            exit(EXIT_FAILURE);
+        }
+
+        // Deschidem fișierul pentru citire
+        FILE *input_file = fopen("input.txt", "r");
+
+        if (input_file == NULL) {
+            perror("Error opening input file");
+            exit(EXIT_FAILURE);
+        }
+
+        // Citim fiecare linie din fișier și o trimitem prin FIFO la procesul copil
+        while (fgets(line, sizeof(line), input_file) != NULL) {
+            write(fd, line, strlen(line) + 1);
+        }
+
+        // Închidem fișierul și FIFO
+        fclose(input_file);
+        close(fd);
+
+        // Așteptăm terminarea procesului copil
+        wait(NULL);
+    }
+
+    // Ștergem FIFO
+    unlink(FIFO_FILE);
+
+    return 0;
+}
+
+
+
+---------------------------------------------------------------
+2
+rezolva cu fifo
+
+
+
+folositi strotk
+
+nume varsta salariu
+
+avem fisierul
+ana,17,1000
+mihai,20,1500
+camren,24,9999
+ion,19,4500
+mirel,34,2355
+
+
+
+cu fifo
+
+parinte copil
+
+
+parintele citeste cate o linie si o trimite copilului
+
+copilil analizeaza linia si sortreaza descrescator dupa salariu
+
+  
+    FILE* fisier=fopen(argv[2],"r");
+    if(!fisier){
+        perror("eroare la deschirerea fisierului");
+        return 2;
+    }
+
+
+foloseste pt char sintaxa asa
+
+ int nlen=0;
+        read(piperecv[0],&nlen,sizeof(int));             //primim lungimea numelui
+        char *nume=(char*)malloc((nlen+1)*sizeof(char)); //alocam memorie pt nume
+        read(piperecv[0],nume,nlen);                     //citim efectiv numele (string)
+        nume[nlen]='\0';                                 //ne asiguram ca stringul se termina cu null
+
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <string.h>
+
+#define FIFO_FILE "myfifo"
+
+// Structură pentru informațiile despre angajați
+typedef struct {
+    char nume[100];
+    int varsta;
+    int salariu;
+} Angajat;
+
+// Funcție pentru a sorta descrescător după salariu
+int compare(const void *a, const void *b) {
+    return ((Angajat *)b)->salariu - ((Angajat *)a)->salariu;
+}
+
+int main(int argc, char *argv[]) {
+    int fd;
+    pid_t pid;
+    char line[256];
+
+    // Creăm FIFO
+    mkfifo(FIFO_FILE, 0666);
+
+    // Creăm un proces copil
+    pid = fork();
+
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) { // Procesul copil
+        // Deschidem FIFO pentru citire
+        fd = open(FIFO_FILE, O_RDONLY);
+
+        if (fd == -1) {
+            perror("Error opening FIFO for reading");
+            exit(EXIT_FAILURE);
+        }
+
+        Angajat angajati[100];
+        int count = 0;
+
+        // Citim liniile din FIFO și le analizăm
+        while (read(fd, line, sizeof(line)) > 0) {
+            char *token = strtok(line, ",");
+            strcpy(angajati[count].nume, token);
+            token = strtok(NULL, ",");
+            angajati[count].varsta = atoi(token);
+            token = strtok(NULL, ",");
+            angajati[count].salariu = atoi(token);
+            count++;
+        }
+
+        // Sortăm angajații descrescător după salariu
+        qsort(angajati, count, sizeof(Angajat), compare);
+
+        // Închidem FIFO pentru citire
+        close(fd);
+
+        // Deschidem FIFO pentru scriere
+        fd = open(FIFO_FILE, O_WRONLY);
+
+        if (fd == -1) {
+            perror("Error opening FIFO for writing");
+            exit(EXIT_FAILURE);
+        }
+
+        // Trimitem înapoi angajații sortați
+        for (int i = 0; i < count; i++) {
+            write(fd, &angajati[i], sizeof(Angajat));
+        }
+
+        // Închidem FIFO pentru scriere
+        close(fd);
+
+        exit(EXIT_SUCCESS);
+    } else { // Procesul părinte
+        // Deschidem FIFO pentru scriere
+        fd = open(FIFO_FILE, O_WRONLY);
+
+        if (fd == -1) {
+            perror("Error opening FIFO for writing");
+            exit(EXIT_FAILURE);
+        }
+
+        // Deschidem fișierul pentru citire
+        FILE *input_file = fopen(argv[1], "r");
+
+        if (input_file == NULL) {
+            perror("Error opening input file");
+            exit(EXIT_FAILURE);
+        }
+
+        // Citim fiecare linie din fișier și o trimitem prin FIFO la procesul copil
+        while (fgets(line, sizeof(line), input_file) != NULL) {
+            write(fd, line, strlen(line) + 1);
+        }
+
+        // Închidem fișierul și FIFO
+        fclose(input_file);
+        close(fd);
+
+        // Așteptăm terminarea procesului copil
+        wait(NULL);
+    }
+
+    // Ștergem FIFO
+    unlink(FIFO_FILE);
+
+    return 0;
+}
+
+
+------------------------
+
+
+
+------------------------------------------------------
+1,ana,1920
+sscanf(line, "%d,%[^,],%d", &id, name, &year);
+
+
+---------
+problema simpla cu fifo     SI FILE TXT
+ 
+
+banane,10
+capsune,8
+cirese,20
+
+copilul ne afiseaza cel mai scump fruct
+
+ #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#define FIFO_FILE "fruits_fifo"
+#define MAX_LINE_LENGTH 100
+
+int main() {
+    // Cream FIFO
+    mkfifo(FIFO_FILE, 0666);
+
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    } else if (pid == 0) { // Suntem în copil
+        // Deschidem FIFO pentru a citi
+        int fifo_fd = open(FIFO_FILE, O_RDONLY);
+        if (fifo_fd < 0) {
+            perror("Error opening FIFO for reading");
+            exit(EXIT_FAILURE);
+        }
+
+        char fruit[50];
+        int price, max_price = 0;
+
+        // Citim fiecare pereche de fruct și preț
+        while (read(fifo_fd, fruit, sizeof(fruit)) > 0 && read(fifo_fd, &price, sizeof(int)) > 0) {
+            if (price > max_price) {
+                max_price = price;
+            }
+        }
+
+        // Afisam fructul cel mai scump
+        printf("The most expensive fruit is: %s\n", fruit);
+
+        // Închidem FIFO
+        close(fifo_fd);
+    } else { // Suntem în părinte
+        // Deschidem fișierul pentru citire
+        FILE *file = fopen("fr.txt", "r");
+        if (!file) {
+            perror("Error opening file for reading");
+            exit(EXIT_FAILURE);
+        }
+
+        // Deschidem FIFO pentru a scrie
+        int fifo_fd = open(FIFO_FILE, O_WRONLY);
+        if (fifo_fd < 0) {
+            perror("Error opening FIFO for writing");
+            exit(EXIT_FAILURE);
+        }
+
+        char line[MAX_LINE_LENGTH];
+        char fruit[50];
+        int price;
+
+        // Citim fiecare linie din fișier și trimitem perechile de fruct și preț prin FIFO
+        while (fgets(line, sizeof(line), file) != NULL) {
+            sscanf(line, "%[^,],%d", fruit, &price);
+            write(fifo_fd, fruit, sizeof(fruit));
+            write(fifo_fd, &price, sizeof(int));
+        }
+
+///sauuuu
+while (fgets(line, sizeof(line), file) != NULL) {
+    char *token = strtok(line, ",");
+    while (token != NULL) {
+        // Trimitem fiecare cuvant (token) prin FIFO
+        write(fifo_fd, token, strlen(token) + 1); // Adaugăm 1 pentru caracterul null terminator
+        token = strtok(NULL, ","); // Continuăm cu următorul cuvânt
+    }
+}
+
+        // Închidem FIFO
+        close(fifo_fd);
+
+        // Închidem fișierul
+        fclose(file);
+    }
+
+    // Înlăturăm FIFO
+    unlink(FIFO_FILE);
+
+    return 0;
+}
+
+
+
+=============================================
+
+
+
+
+
+
+
+
+
+
+
+
+-----------------------------
+
+fifo
+Program care creeaza doua procese copil ce comunica prin fifo
+
+- proces A citeste de la tastatura o singura data un numar intreg si il trimite prin fifo 
+procesului b
+
+
+- apoi citeste de la tastatura repetat numere intregi si le va trimite prin fifo procesului B, pana se introduce -1
+
+(((((- met 2 - apoi citeste de la tastatura repetat numere intregi si le va trimite prin pipe procesului B, pana se introduce -1)))))))
+
+
+Procesul B va detremina si va afisa doar acele numere care sunt multiplii ai lui n
+
+
+./pr
+100
+
+500
+e multiplu
+
+245
+nu e multiplu
+
+-1
+
+ 
+
+
+
+
+
+
+
+-----------------------------
+ 
+THREAD
+
+program care creeaza 7 thread uri si are 2 variabile globale care contorizeaza
+numerele cu o cifra si numerele cu 2 cifre
+
+
+fiecare thread genereaza 3 numere random intre 0 si 25, si in functie de numarul obtinut, incrementeaza contorul global corespunzator numarului de cifre
+
+
+thread ul principal afiseaza la terminarea thread urilor valoarea celor 2 variabile globale
+
+
+afisati si numerele generate.  folositi mecanisme de sincronizare cat mai eficiente
+
+
+./prog
+
+numere cu 1 cifra: 5
+numer cu 2 cifre: 16
+
+
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+int nrocif=0, nrdouacif=0;
+pthread_t t[7];
+int tid[7];
+
+
+pthread_mutex_t mtx1;
+pthread_mutex_t mtx2;
+
+
+
+//3*7=21 de numere in total
+
+
+void*  generarenumere(void* arg){
+    int numere[3];
+    int tid=*(int*)arg;
+
+    srand(time(NULL)+tid); // initializare generator de nr aleatorii
+
+    for(int i=0; i<3; i++) {
+     numere[i] = rand()%26; // generam nr intre 0 si 25
+    }
+
+
+
+///////pt gen litere
+char litere[3];
+
+    for (int i = 0; i < 3; i++) {
+        litere[i] = 'A' + rand() % 26; // Generăm o literă aleatorie
+    }
+
+ printf("Threadul cu id %d a generat literele: ", tid);
+    for (int i = 0; i < 3; i++) {
+        printf("%c ", litere[i]);
+    }
+    printf("\n");
+
+ pthread_mutex_lock(&mtx1);
+    for (int i = 0; i < 3; i++) {
+        if (litere[i] < 'J') {
+            nrocif++;
+        } else {
+            nrdouacif++;
+        }
+    }
+    pthread_mutex_unlock(&mtx1);
+
+    return NULL;
+}
+//////////
+
+
+   printf("threadul cu id %d a generat numerele: ", tid);
+  for(int i=0; i<3; i++) {
+     printf("%d \n", numere[i]);
+  }
+  printf("\n");
+
+  pthread_mutex_lock(&mtx1);
+ for(int i=0; i<3; i++) {
+    if(numere[i] <10) { nrocif++; }
+    else {nrdouacif++; }
+ }
+  pthread_mutex_unlock(&mtx1);
+
+  //return NULL;
+
+ pthread_exit(NULL);
+
+}
+
+
+int main(){
+  int i;
+  pthread_mutex_init(&mtx1,NULL);
+
+
+//creare threaduri
+  for(i=0; i<7;i++)
+    { tid[i]=i;
+       pthread_create(&t[i], NULL, generarenumere,&tid[i]);
+    }
+
+//asteptam finalizare threaduri
+ for(i=0; i<7;i++)
+        pthread_join(t[i],NULL);
+
+ pthread_mutex_destroy(&mtx1);
+
+
+printf("numere cu 1 cifra: %d\n", nrocif);
+printf("numere cu 2 cifre: %d\n", nrdouacif);
+
+return 0;
+}
+
+
+---------------------------
+
+kevin nr o cifra si 2 cifre
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <time.h>
+
+pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex2 = PTHREAD_MUTEX_INITIALIZER;
+int nr_1 = 0;
+int nr_2 = 0;
+
+void* dow(void* arg){
+	int n=0;
+	for(int i=0; i<3; i++){
+		//srand(time(NULL));
+		n = rand() % 26;
+
+		if(n<10){
+		pthread_mutex_lock(&mutex1);
+		nr_1 += 1;
+		pthread_mutex_unlock(&mutex1);}
+
+		else if(n >9 && n<100){
+		pthread_mutex_lock(&mutex2);
+		nr_2 += 1;
+		pthread_mutex_unlock(&mutex2);}
+		printf("nr %d generat: %d\n",i,n);
+	}
+
+return NULL;
+}
+
+
+int main (int arg, char* argv[]){
+
+	pthread_t tids[7];
+
+
+	for(int i =0; i< 7; i++){
+
+		pthread_create(&tids[i], NULL, dow, &i);
+	}
+
+
+	for(int i =0; i< 7; i++){
+
+		pthread_join(tids[i], NULL);
+	}
+
+	printf("nr cu o cifra: %d\n",nr_1);
+	printf("nur cu doua cifre: %d\n",nr_2);
+
+return 0;
+}
+
+
+
+-----------------------------
+
+thread lab 12 diana perta
+
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+
+//. Write a program that creates 5 threads and had 3 global
+//variables v5, v2, v3. Each thread generates a random number and:
+//- if the number is multiple of 2 increments v2
+//- if the number is multiple of 3, increments v3
+//- if the number is multiple of 5 increments v5
+
+//The number can be a multiple of more numbers (ex. for 10 we will
+//increment both V2 and V5)
+//
+//Threads print the generated numbers and stop when 30 numbers
+//have been generated.
+
+//The main program prints the 3 global variables.
+//.!!! Use mutex for synchronisation
+
+//#define count 5
+//#define limita 30
+
+int v2=0,v3=0,v5=0;
+int numere = 0;
+pthread_t t[5];
+int tid[5];
+
+
+pthread_mutex_t mtx1;
+pthread_mutex_t mtx2;
+pthread_mutex_t mtx3;
+pthread_mutex_t mtx4;
+
+
+
+void* generator_numar(void* arg){
+        int nrid=*(int*)arg;
+        while(1)
+        {
+                pthread_mutex_lock(&mtx1);
+                numere++;
+                if (numere>30) {
+                        pthread_mutex_unlock(&mtx1);
+                        break;
+                }
+                pthread_mutex_unlock(&mtx1);
+
+ //srand(time(NULL) + nrid);
+
+                int num=rand() % 100;
+                if (num % 2 == 0)
+                {
+                        pthread_mutex_lock(&mtx2);
+                        v2++;
+                        printf("TID: %d  v2 %d : Numar: %d \n",nrid, v2,num);
+                        pthread_mutex_unlock(&mtx2);
+
+                }
+                if (num % 3 == 0)
+                {
+                         pthread_mutex_lock(&mtx3);
+                         v3++;
+                         printf("TID: v3 %d : Numar: %d \n",v3,num);
+                         pthread_mutex_unlock(&mtx3);
+                }
+                if (num % 5 == 0)
+                {
+                         pthread_mutex_lock(&mtx4);
+                         v5++;
+                         printf("TID: v5 %d : Numar: %d \n",v5,num);
+                         pthread_mutex_unlock(&mtx4);
+                }
+                pthread_mutex_unlock(&mtx1);
+
+        }
+        pthread_exit(NULL);
+}
+
+int main() {
+//int i
+    pthread_mutex_init(&mtx1, NULL);
+    pthread_mutex_init(&mtx2, NULL);
+    pthread_mutex_init(&mtx3, NULL);
+    pthread_mutex_init(&mtx4, NULL);
+
+    for(int i=0; i < 5; i++){
+        tid[i]=i;
+    }
+
+    for (int i = 0; i < 5; i++) {
+        pthread_create(&t[i], NULL, generator_numar, &tid[i]);
+    }
+
+    for (int i = 0; i < 5; i++) {
+        pthread_join(t[i], NULL);
+    }
+
+    pthread_mutex_destroy(&mtx1);
+    pthread_mutex_destroy(&mtx2);
+    pthread_mutex_destroy(&mtx3);
+    pthread_mutex_destroy(&mtx4);
+
+    printf("v2 = %d, v3 = %d, v5 = %d\n", v2, v3, v5);
+
+    return 0;
+}
+
+-----------------------------
+boltz thread
+
+#include <stdio.h>
+#include <pthread.h>
+#include <stdlib.h>
+
+
+
+// joc boltz cu 10 threaduri
+//Implementati jocul boltz folosing 10 theaduri.
+//Se porneste de la o valoare de o cifra, variabila globala N.
+//Fiecare thread incrementeaza variabila N si afiseaza fie valoarea ei,
+ //fie boltz (daca numarul este divizibil cu 7 sau are cifra 7). Threadurile
+//vor avea acces la variabila N in ordine aleatoare, si vor continua jocul
+//pana cand N ajunge la valoarea 50.
+
+int n=5;
+pthread_t t[10];
+int tid[10];
+
+pthread_mutex_t m;
+
+int boltz(int n){
+  if(n%7==0)
+        return 1;
+  if(n%10==7)
+        return 1;
+  if(n/10==7)
+        return 1;
+  return 0;
+
+}
+
+
+
+void* joaca (void * id) {
+        int nrth=*(int*)id;
+        while (n<50) {
+        pthread_mutex_lock (&m); // dam lock
+        n++;
+}
+        if (n>50)
+     {
+        pthread_mutex_unlock (&m);
+        break;
+     }
+        if (boltz(n))
+        printf("TID %d: Boltz \n", nrth);
+else
+        printf("TID %d %d\n", nrth, n);
+
+        pthread_mutex_unlock (&m); //dam unlock
+
+}
+   pthread_exit(NULL);
+}
+
+int main(){
+        int i;
+        pthread_mutex_init(&m, NULL);
+        for (i=0; i<10; i++)
+                tid[i]=i;
+        for (i=0; i<10; i++)
+                pthread_create(&t[i], NULL, joaca, &tid[i]);
+        for (i=0; i<10; i++)
+                pthread_join(t[i], NULL);
+pthread_mutex_destroy(&m);
+return 0;
+}
+
+
+--------------------------------------------------------------
+
+
+
+//3/. Write a program that creates 20 threads, 
+//giving each thread a string as parameter. 
+//Each thread will count and add to the global 
+//variables v and n as follows: the number of vowels contained 
+//by the string added to v, and the number of digits contained 
+//in the string added to n. 
+//Synchronize threads using mutex.
+
+Scrieti un program C care primeste ca argumente in linia de comanda stringuri de maxim 30 de caractere. Pentru fiecare parametru, se creeaza un thread care numara cate vocale si cate cifre (0-9) caractere exista in acel string, apoi actualizeaza una sau mai multe variabile globala care contorizeaza numarul total de vocale si cifre din toate stringurile primite ca si parametri. La final programul afiseaza pentru fiecare string si per total numarul de vocale si cifre din stringurile parametri.
+
+
+
+
+------------------------
+
+
+
+THREAD CU ARGUMENT PAIR
+
+//4.  C program receives command line args pairs of numbers, 
+//and creates for each pair a thread that checks if the two numbers are 
+//relatively prime (gcd=1), incrementing a global variable. 
+//The program prints at the end how many relatively prime pairs have been found 
+//and the respective pairs.
+
+//(you can use atoi() )
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+int relatively_prime_count = 0;
+pthread_mutex_t mutex;
+
+int gcd(int a, int b) {
+    while (b != 0) {
+        int temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
+
+void *check_relatively_prime(void *arg) {
+    int *pair = (int *)arg;
+    int num1 = pair[0];
+    int num2 = pair[1];
+
+    if (gcd(num1, num2) == 1) {
+        pthread_mutex_lock(&mutex);
+        relatively_prime_count++;
+        pthread_mutex_unlock(&mutex);
+        printf("(%d, %d) is relatively prime.\n", num1, num2);
+    }
+
+    pthread_exit(NULL);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 3 || argc % 2 != 1) {
+        fprintf(stderr, "Usage: %s <num1> <num2> <num3> <num4> ...\n", argv[0]);
+        return 1;
+    }
+
+    pthread_t threads[(argc - 1) / 2];
+    pthread_mutex_init(&mutex, NULL);
+
+    for (int i = 1; i < argc; i += 2) {
+        int pair[2];
+        pair[0] = atoi(argv[i]);
+        pair[1] = atoi(argv[i + 1]);
+        pthread_create(&threads[(i - 1) / 2], NULL, check_relatively_prime, (void *)pair);
+    }
+
+    for (int i = 0; i < (argc - 1) / 2; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    pthread_mutex_destroy(&mutex);
+
+    printf("Number of relatively prime pairs found: %d\n", relatively_prime_count);
+
+    return 0;
+}
+
+
+--------------------------------------------------------------
+
+
+THREAD PAIR DE STRINGURI si verifica daca sunt identice
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <string.h>
+
+int identical_pair_count = 0;
+pthread_mutex_t mutex;
+
+void *check_identical_pairs(void *arg) {
+    char **pair = (char **)arg;
+    char *str1 = pair[0];
+    char *str2 = pair[1];
+    
+    if (strcmp(str1, str2) == 0) {
+        pthread_mutex_lock(&mutex);
+        identical_pair_count++;
+        pthread_mutex_unlock(&mutex);
+        printf("(%s, %s) are identical.\n", str1, str2);
+    }
+
+    pthread_exit(NULL);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 3 || argc % 2 != 1) {
+        fprintf(stderr, "Usage: %s <str1> <str2> <str3> <str4> ...\n", argv[0]);
+        return 1;
+    }
+
+    pthread_t threads[(argc - 1) / 2];
+    pthread_mutex_init(&mutex, NULL);
+
+    for (int i = 1; i < argc; i += 2) {
+        char *pair[2];
+        pair[0] = argv[i];
+        pair[1] = argv[i + 1];
+        pthread_create(&threads[(i - 1) / 2], NULL, check_identical_pairs, (void *)pair);
+    }
+
+    for (int i = 0; i < (argc - 1) / 2; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    pthread_mutex_destroy(&mutex);
+
+    printf("Number of identical pairs found: %d\n", identical_pair_count);
+
+    return 0;
+}
+
+
+
+
+
+
+
+--------------------------------------------------------------
+
+------------------------------
+
+thread medeea 
+
+2  var globale
+thread uri
+
+se citeste din linia de comanda un sir de nr intregi
+
+numarati cate numere contin 5 si cate 7
+si daca contin si 5 si 7 aduni 2 de 2 ori
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+
+int count_contains_5 = 0;
+int count_contains_7 = 0;
+pthread_mutex_t mutex_5, mutex_7;
+
+void *check_number(void *arg) {
+    char *num_str = (char *)arg;
+    int contains_5 = 0;
+    int contains_7 = 0;
+
+    for (int i = 0; num_str[i] != '\0'; i++) {
+        if (num_str[i] == '5') {
+            contains_5 = 1;
+        }
+        if (num_str[i] == '7') {
+            contains_7 = 1;
+        }
+    }
+
+    if (contains_5) {
+        pthread_mutex_lock(&mutex_5);
+        count_contains_5++;
+        pthread_mutex_unlock(&mutex_5);
+    }
+
+    if (contains_7) {
+        pthread_mutex_lock(&mutex_7);
+        count_contains_7++;
+        pthread_mutex_unlock(&mutex_7);
+    }
+
+    pthread_exit(NULL);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <num1> <num2> ... <numN>\n", argv[0]);
+        return 1;
+    }
+
+    pthread_t threads[argc - 1];
+    pthread_mutex_init(&mutex_5, NULL);
+    pthread_mutex_init(&mutex_7, NULL);
+
+    for (int i = 1; i < argc; i++) {
+        pthread_create(&threads[i - 1], NULL, check_number, (void *)argv[i]);
+    }
+
+    for (int i = 1; i < argc; i++) {
+        pthread_join(threads[i - 1], NULL);
+    }
+
+    pthread_mutex_destroy(&mutex_5);
+    pthread_mutex_destroy(&mutex_7);
+
+    printf("Numbers containing 5: %d\n", count_contains_5);
+    printf("Numbers containing 7: %d\n", count_contains_7);
+
+    return 0;
+}
+
+
+
+ 
+
+
+---------------------
+
+
+THREAD DIANA PERTA AZI
+
+
+
+program ce primeste mai multe stringuri ca parametri
+
+pentru fiecare string creeaza cate un thread care primeste ca parametru un string
+
+fiecare thread verifica daca stringul e palindrom si incrementeaza var globale 
+e_palindrom si nu_e_palindrom
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+#include <stdbool.h>
+
+int e_palindrom = 0;
+int nu_e_palindrom = 0;
+pthread_mutex_t mutex_palindrom;
+
+bool is_palindrome(const char *str) {
+    int len = strlen(str);
+    for (int i = 0; i < len / 2; ++i) {
+        if (str[i] != str[len - i - 1]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void *check_palindrome(void *arg) {
+    char *str = (char *)arg;
+    if (is_palindrome(str)) {
+        pthread_mutex_lock(&mutex_palindrom);
+        e_palindrom++;
+        pthread_mutex_unlock(&mutex_palindrom);
+    } else {
+        pthread_mutex_lock(&mutex_palindrom);
+        nu_e_palindrom++;
+        pthread_mutex_unlock(&mutex_palindrom);
+    }
+    pthread_exit(NULL);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <string1> <string2> ... <stringN>\n", argv[0]);
+        return 1;
+    }
+
+    pthread_t threads[argc - 1];
+    pthread_mutex_init(&mutex_palindrom, NULL);
+
+    for (int i = 1; i < argc; i++) {
+        pthread_create(&threads[i - 1], NULL, check_palindrome, (void *)argv[i]);
+    }
+
+    for (int i = 1; i < argc; i++) {
+        pthread_join(threads[i - 1], NULL);
+    }
+
+    pthread_mutex_destroy(&mutex_palindrom);
+
+    printf("Number of palindromes: %d\n", e_palindrom);
+    printf("Number of non-palindromes: %d\n", nu_e_palindrom);
+
+    return 0;
+}
+
+
+---------KEVIN PALINDROM
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <time.h>
+#include <string.h>
+int palind = 0;
+int nopalind = 0;
+
+pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex2 = PTHREAD_MUTEX_INITIALIZER;
+
+
+void * dow(void* arg){
+char* str = (char*) arg;
+int m = strlen(str);
+int aux = nopalind;
+for (int i = 0; i< m; i++){
+	if(str[i] != str[m-i-1]){
+		pthread_mutex_lock(&mutex1);
+		nopalind+=1;
+		pthread_mutex_unlock(&mutex1);
+		break;}
+}
+
+if(aux == nopalind){
+ 	pthread_mutex_lock(&mutex2);
+        palind+=1;
+        pthread_mutex_unlock(&mutex2);
+}
+
+return NULL;
+}
+
+
+int main(int arg, char* argv[]){
+
+if(arg < 2){
+	printf("nr insuficient de argumente: ./pb5 str1 ...\n");
+	exit(1);}
+
+int n = arg -1;
+pthread_t tids[n];
+
+for(int i =0; i<n; i++){
+
+	pthread_create(&tids[i],NULL,dow,argv[i+1]);
+}
+
+for (int i =0; i<n; i++){
+	pthread_join(tids[i],NULL);
+}
+
+printf("nr de cuvinte palindorme: %d\n",palind);
+printf("nr de cuvinte nepalindorme: %d\n",nopalind);
+
+return 0;}
+
+
+----------------------
+
+
+thread alex se termina cu T SAU S
+
+rezolva cu thread
+parametri mai multe stringuri(cuvinte) in linia de comanda
+
+pentru fiecare cuvant se creeaza un thread care priimeste ca argument cuvantul si verifica daca acesta se termina cu litera 's' sau 't' litera mica sau mare incrmentand un control global pt fiecare caz
+
+thread ul principa; afiseaza la final cate argumente se termina cu t si cate cu s
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <string.h>
+#include <ctype.h>
+
+int count_ends_with_s = 0;
+int count_ends_with_t = 0;
+pthread_mutex_t mutex_s, mutex_t;
+
+void *check_word(void *arg) {
+    char *word = (char *)arg;
+    int len = strlen(word);
+    char last_char = word[len - 1];
+
+    if (last_char == 's' || last_char == 'S') {
+        pthread_mutex_lock(&mutex_s);
+        count_ends_with_s++;
+        pthread_mutex_unlock(&mutex_s);
+    }
+
+    if (last_char == 't' || last_char == 'T') {
+        pthread_mutex_lock(&mutex_t);
+        count_ends_with_t++;
+        pthread_mutex_unlock(&mutex_t);
+    }
+
+    pthread_exit(NULL);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <word1> <word2> ... <wordN>\n", argv[0]);
+        return 1;
+    }
+
+    pthread_t threads[argc - 1];
+    pthread_mutex_init(&mutex_s, NULL);
+    pthread_mutex_init(&mutex_t, NULL);
+
+    for (int i = 1; i < argc; i++) {
+        pthread_create(&threads[i - 1], NULL, check_word, (void *)argv[i]);
+    }
+
+    for (int i = 1; i < argc; i++) {
+        pthread_join(threads[i - 1], NULL);
+    }
+
+    pthread_mutex_destroy(&mutex_s);
+    pthread_mutex_destroy(&mutex_t);
+
+    printf("Words ending with 's': %d\n", count_ends_with_s);
+    printf("Words ending with 't': %d\n", count_ends_with_t);
+
+    return 0;
+}
+
+---------------------
+
+boltz proces PIPE
+
+
+#include<stdlib.h>
+#include<stdio.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<sys/wait.h>
+
+
+
+int boltz(int n){
+  if(n%7==0)
+        return 7;
+  if(n%10==7)
+        return 7;
+  if(n/10%10==7)
+        return 7;
+  return 0;
+
+}
+
+// boltz cu procese
+// un parinte creeaza 2 procese copii A SI B
+// procesul A incepe jocul cu un nr <50 si il trimite la B
+// B primeste un nr, il decrementeaza, si daca e multiplu de 7 sau are cifra 7
+// scrie boltz, altfel scrie numarul si il trimite la A
+// A primeste nr, il decrementeaza si scrie boltz daca e mult de 7 / ucif = 7
+// altfel scrie nr si il trimite la B. etc.....
+// pana se ajunge la un nr de o cifra
+
+
+// 40 -> 39 - >38 -> boltz -> .... 10
+
+int main()
+{
+   int nr=40;
+   int a2b[2];
+   int b2a[2];
+
+   pipe(a2b);
+   pipe(b2a);
+
+   int pa=fork();
+
+   if(pa==0)
+
+  { // procesul A copil
+
+     close(a2b[0]);
+     close(b2a[1]);
+
+     write(a2b[1],&nr,sizeof(int));
+
+     while(nr>10)
+     {
+       read(b2a[0],&nr,sizeof(int));
+       nr--;
+
+      if(boltz(nr)==7)
+          printf("A - boltz\n");
+      else
+          printf("A : %d \n", nr);
+
+      write(a2b[1], &nr, sizeof(int));
+
+     }
+    close(a2b[1]);
+    close(b2a[0]);
+    exit(0);
+
+}
+
+
+int pb=fork();
+
+if(pb==0)
+
+{
+ // procesul B copil
+
+close(a2b[1]);
+close(b2a[0]);
+
+while(nr>10)
+{
+
+    read(a2b[0],&nr,sizeof(int));
+    nr--;
+
+      if(boltz(nr)==7)
+          printf("B - boltz\n");
+      else
+          printf("B : %d \n", nr);
+
+      write(b2a[1], &nr, sizeof(int));
+
+}
+
+    close(a2b[0]);
+    close(b2a[1]);
+    exit(0);
+
+}
+
+
+close(a2b[1]);
+close(b2a[0]);
+close(a2b[0]);
+close(b2a[1]);
+
+wait(0);
+wait(0);
+
+return 0;
+
+}
+
+
+-------------------------
+
+boltz FIFO
+
+
+
+Varianta de Boltz cu FIFO: Procesul parinte P creeaza procesul copil C si comunica prin FIFO. Procesul P trimite un numar de o cifra catre procesul C (incepe jocul). Procesul C primeste un numar, il incrementeaza si afiseaza boltz daca numarul are cifra 7 sau e multiplu de 7 sau daca nu, afiseaza numarul si in trimite catre P. Procesul P primeste un numar, il incrementeaza si afiseaza boltz daca numarul are cifra 7 sau e multiplu de 7 sau daca nu, afiseaza numarul pe ecran si il trimite catre C. Si tot asa pana cand:
+
+a) Se ajunge la numarul 50.
+
+P: 5 -> C: 6 -> P: boltz -> C: 8 -> P: 9 -> C: 10 -> .... -> boltz -> 48 -> boltz -> 50
+
+b) Se scrie boltz de 15 ori.
+
+
+
+
+
+
+-----------------------------
+
+LAB 13 FULGA
+
+Grupati-va in echipe de cate 2 studenti: unul implementeaza programul 
+folosind threaduri
+folosind procese.
+
+Programul primeste in linia de comanda doua numere: N si M, numere intregi.
+
+Afisati timpul in care programul calculeaza de N ori, suma numerelor de la 1 la M.
+
+Rezolvati programul in doua variante:
+
+1. Folosind threaduri: creati N threaduri, fiecare calculand suma de la 1 la M.
+
+2. Folosind procese: creati N procese, fiecare calculand suma de la 1 la M.
+
+Comparati timpii de executie ale celor doua variante folosind diverse valori pt N si M.
+
+
+
+
+PB LAB 13
+===========================================
+ 
+
+METODA 1 PROCESE + PIPE
+
+ #include <unistd.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <sys/wait.h>
+
+long sum_of_numbers(int m) {
+    long sum = 0;
+    for (int i = 1; i <= m; i++) {
+        sum += i;
+    }
+    return sum;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        fprintf(stderr, "Ne trebuie 3 parametri! \n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    int N = atoi(argv[1]);
+    int M = atoi(argv[2]);
+
+//    time_t start = time(NULL);
+
+    struct timespec start,end;
+   clock_gettime(CLOCK_MONOTONIC, &start);
+
+    for (int i = 0; i < N; i++) {
+        int pid = fork(); //cream N procese
+
+        if(pid<0) { perror("eroare fork!"); exit(1);}
+
+        else if (pid == 0) {
+            // Proces copil
+            long result = sum_of_numbers(M);
+             printf("suma: %ld\n", result);
+            exit(0);
+        }
+    }
+
+    // Parinte
+
+    for (int i = 0; i < N; i++) {
+        wait(NULL);
+    }
+
+ clock_gettime(CLOCK_MONOTONIC, &end);
+double timp = (end.tv_sec - start.tv_sec)+ ( end.tv_nsec - start.tv_nsec)/1e9;
+printf("timp: %f secunde\n", timp);
+
+    //time_t end = time(NULL);
+    //double elapsed = difftime(end, start);
+
+//    printf("Time elapsed: %.2f seconds.\n", elapsed);
+
+    return 0;
+}
+
+
+--------------------------------------------------------------------
+
+
+METODA 2 DARIUS THREADS
+
+ #include <pthread.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdio.h>
+int n,m;
+
+
+void* calcsum() {
+        int sum=0;
+        for(int i=1; i<=m; i++){
+                sum+=i;
+        }
+        return NULL;
+
+}
+
+int main(int argc, char ** argv)
+{
+
+  n=atoi(argv[1]);
+ pthread_t t[n];
+
+ clock_t start, end;
+ double time;
+
+ m=atoi(argv[2]);
+
+ printf("n = %d, m = %d \n", n,m);
+ int i;
+
+ long long int* suma=0;
+
+ start=clock();
+
+ for(int i=0; i<n; i++) {
+   pthread_create(&t[i], NULL, calcsum,NULL);
+}
+
+ for(int i=0; i<n; i++) {
+   pthread_join(t[i], NULL);
+}
+
+
+end=clock();
+time= ((double) (end-start))/CLOCKS_PER_SEC;
+
+printf("TIMP:  %10f\n", time);
+
+return 0;
+}
+
+
+
+------------------------------------------------------------------
+
+
+
+
+
+
+
+--------------------------------------------------------------------
+
+LAB 13 TEAMS PROBLEME RECAPITULATIVEEEEEE
+
+
+1.
+
+Scrieti un program C care creeaza 2 procese copil, C1 si C2. 
+Procesul C1 citeste de la tastatura stringuri de maxim 20 
+de caractere pana se da stringul stop si le trimite catre 
+C2 prin pipe, care calculeaza numarul de vocale si apoi 
+trimite inapoi tot prin pipe acest numar. C1 afiseaza pentru 
+fiecare string numarul de vocale primit de la C1.
+
+//Scrieti un program C care creeaza 2 procese copil, C1 si C2.
+//Procesul C1 citeste de la tastatura stringuri de maxim 20
+//de caractere pana se da stringul stop si le trimite catre
+//C2 prin pipe, care calculeaza numarul de vocale si apoi
+//trimite inapoi tot prin pipe acest numar. C1 afiseaza pentru
+//fiecare string numarul de vocale primit de la C1.
+
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <string.h>
+
+#define MAX_LENGTH 20
+
+int nrvocale(char *sir) //sir[]
+{
+  int nrvoc=0;
+  //char vocale[]="aeiouAEIOU";
+  for(int i=0;i<strlen(sir); i++)
+ {
+    if(strchr("AEIOUaeiou",sir[i])!= NULL)
+         nrvoc++;
+ }
+return nrvoc;
+
+}
+
+
+int main(int argc, char* argv[])
+{
+
+int c1c2[2]; // 0 read, 1 write
+int c2c1[2]; //comunica copii intre ei
+
+pipe(c1c2);
+pipe(c2c1);
+
+
+    //if (pipe(c1c2) == -1 || pipe(c2c1) == -1) {
+      //  perror("eroare pipe");
+        //exit(EXIT_FAILURE);
+   // }
+
+
+// + VALIDARIIIIIIIII PIPE
+// + VALIDARI FORK
+
+int pid1=fork();
+
+// validare pid1
+ if (pid1 < 0) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
+
+
+
+if(pid1 == 0)
+{
+   // suntem in primul copil
+    // C1 citeste stringuri de max 20 caractere
+  close(c1c2[0]);
+  close(c2c1[1]);
+
+  char input[MAX_LENGTH+1];
+  int nrvocale;
+
+  while(1)
+{
+   printf("Introduceti un string\n");
+   //scanf("%19s", stringuri);
+
+
+           fgets(input,MAX_LENGTH+1, stdin);
+           input[strcspn(input, "\n")] = 0;
+
+            if (strcmp(input, "stop") == 0) {
+                break;
+            }
+
+
+
+  //write(c1c2[1],stringuri,strlen(stringuri)+1); //am trimis stringurile catre procesul 2
+
+
+  write(c1c2[1],input,strlen(input)+1);
+  read(c2c1[0],&nrvocale, sizeof(int)); //primil de la proc 2 nr de vocale din string
+
+  if(nrvocale==-1) {break;}
+
+  printf("Numarul de vocale in %s este: %d\n",input, nrvocale);
+
+}
+  close(c1c2[1]);
+  close(c2c1[0]);
+  exit(0);
+}
+
+
+// inapoi in parinte
+
+//facem al doilea copil
+
+int pid2=fork();
+
+// validare pid2
+
+if(pid2==0) {
+
+ close(c1c2[1]);
+ close(c2c1[0]);
+
+ char stringuri[MAX_LENGTH+1];
+ int nrvocc=0;
+ while(1){
+  //int i=0;
+  //char ch;
+
+  //while(read(c1c2[0],&ch, sizeof(char)) > 0 && ch!='\0')
+
+//{
+  // stringuri[i++]=ch;
+ //if (i >= 20) break;
+//}
+
+//stringuri[i] = '\0';
+
+  //if(strcmp(stringuri,"stop") ==0) {
+    //    int final=-1;
+      //  write(c2c1[1],&final, sizeof(int));
+        //break;
+//}
+// else {
+  //  int nrvocc=nrvocale(stringuri);
+    //write(c2c1[i],&nrvocc,sizeof(int));
+
+   //}
+//
+            int n = read(c1c2[0], stringuri, sizeof(stringuri));
+            if (n <= 0) {
+                break;
+            }
+
+            nrvocc = nrvocale(stringuri);
+            write(c2c1[1], &nrvocc, sizeof(int));
+
+
+}
+close(c2c1[1]);
+close(c1c2[0]);
+exit(0);
+}
+
+
+close(c1c2[0]);
+close(c1c2[1]);
+close(c2c1[0]);
+close(c2c1[1]);
+wait(0); //WAIT NULL
+wait(0);
+return 0;
+}
+
+
+
+2. Scrieti doua programe C, numite P1 si P2. Programul P1 citeste de la tastatura un sir de numere intregi si il trimite prin fifo catre P2, P2 primeste numerele, calculeaza produsul elementelor din sir si trimite inapoi prin fifo rezultatul catre P1. 
+Procesul P1 citeste produsul primit de la P2 si il afiseaza. 
+Cele doua programe P1 si P2 sunt programe separate.
+
+p1
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+
+#define FIFO1 "fifo11"
+#define FIFO2 "fifo22"
+#define MAX_LEN 1024
+
+int main() {
+    // Creează FIFO-urile
+    mkfifo(FIFO1, 0666);
+    mkfifo(FIFO2, 0666);
+
+    char input[MAX_LEN];
+    printf("Introduceti un sir de numere intregi separate prin spatii: ");
+    fgets(input, MAX_LEN, stdin);
+    input[strcspn(input, "\n")] = '\0'; // Elimină newline-ul de la final
+
+    // Trimite șirul de numere către P2
+    int fd1 = open(FIFO1, O_WRONLY);
+    if (fd1 == -1) {
+        perror("open FIFO1 for writing");
+        exit(1);
+    }
+    write(fd1, input, strlen(input) + 1);
+    close(fd1);
+
+    // Primește produsul de la P2
+    char product_str[MAX_LEN];
+    int fd2 = open(FIFO2, O_RDONLY);
+    if (fd2 == -1) {
+        perror("open FIFO2 for reading");
+        exit(1);
+    }
+    read(fd2, product_str, MAX_LEN);
+    close(fd2);
+
+    printf("Produsul elementelor din sir este: %s\n", product_str);
+
+    // Șterge FIFO-urile
+    unlink(FIFO1);
+    unlink(FIFO2);
+
+    return 0;
+}
+
+
+
+
+p2
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+
+#define FIFO1 "fifo11"
+#define FIFO2 "fifo22"
+#define MAX_LEN 1024
+
+int main() {
+    // Primește șirul de numere de la P1
+    char input[MAX_LEN];
+    int fd1 = open(FIFO1, O_RDONLY);
+    if (fd1 == -1) {
+        perror("eroare fifo1");
+        exit(1);
+    }
+    read(fd1, input, MAX_LEN);
+    close(fd1);
+
+    // Calculează produsul numerelor
+    char *token = strtok(input, " ");
+    int product = 1;
+    while (token != NULL) {
+        product *= atoi(token);
+        token = strtok(NULL, " ");
+    }
+
+    // Afișează produsul folosind printf
+    printf("Produsul numerelor este: %d\n", product);
+
+    // Trimite rezultatul înapoi la P1 folosind dprintf
+    int fd2 = open(FIFO2, O_WRONLY);
+    if (fd2 == -1) {
+        perror("eroare fifo2");
+        exit(1);
+    }
+    dprintf(fd2, "%d", product);
+    close(fd2);
+
+    return 0;
+}
+
+
+
+
+
+
+
+3. Scrieti un program C care primeste ca argumente in linia de comanda stringuri de maxim 30 de caractere. Pentru fiecare parametru, se creeaza un thread care numara cate vocale si cate cifre (0-9) caractere exista in acel string, apoi actualizeaza una sau mai multe variabile globala care contorizeaza numarul total de vocale si cifre din toate stringurile primite ca si parametri. La final programul afiseaza pentru fiecare string si per total numarul de vocale si cifre din stringurile parametri.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <time.h>
+#include <string.h>
+
+
+int nrvocale=0, nrcifre=0;
+
+pthread_mutex_t mutex_vocale;
+
+pthread_mutex_t mutex_cifre;
+
+void* functie(void *arg)
+
+{
+  char *s=(char*)arg;
+  for(int i=0; i<strlen(s);i++) {
+
+   char ch=s[i];
+
+   if(strchr("AEIOUaeiou", ch)) {
+    pthread_mutex_lock(&mutex_vocale);
+    nrvocale++;
+    pthread_mutex_unlock(&mutex_vocale);
+
+  }
+
+  if(ch >= '0' && ch<='9') {
+    pthread_mutex_lock(&mutex_cifre);
+    nrcifre++;
+    pthread_mutex_unlock(&mutex_cifre);
+ }
+
+}
+return NULL;
+
+}
+
+int main(int argc, char* argv[])
+{
+
+if(argc <2){
+printf("dati argumente! \n");
+exit(1);
+}
+
+pthread_mutex_init(&mutex_vocale,NULL);
+pthread_mutex_init(&mutex_cifre,NULL);
+
+
+int nrthreaduri=argc-1;
+
+pthread_t t[nrthreaduri];
+
+    for(int i = 0; i < nrthreaduri; i++) {
+        printf("%s\n", argv[i + 1]);
+    }
+
+//creare threaduri
+  for(int i=0; i<nrthreaduri;i++)
+    {
+       char *str=argv[i+1];// ca altfel ne numara si linia de comanda
+       pthread_create(&t[i], NULL, functie, (void *)str);//argv[i+1]);
+    }
+
+//asteptam finalizare threaduri
+ for(int i=0; i<nrthreaduri;i++)
+        pthread_join(t[i],NULL);
+
+
+
+pthread_mutex_destroy(&mutex_vocale);
+pthread_mutex_destroy(&mutex_cifre);
+
+printf("nr vocale: %d\n", nrvocale);
+
+printf("nr cifre: %d\n", nrcifre);
+
+return 0;
+}
+
+-------------------------------------------
+
+THREAD CU PARAMETRU STRING DIN FISIER
+
+problema
+fisier
+miere
+pere 
+banane
+ana
+maria
+
+ 
+
+thread uri iau ca parametru cate un string din fiecare linie de fisier
+
+numara pt fiecare cuvant cate vocale si cate consoane au
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <string.h>
+
+#define NUM_THREADS 5
+
+// Variabile globale pentru numărul total de vocale și consoane
+int total_vowels = 0;
+int total_consonants = 0;
+pthread_mutex_t mutex_vowels;
+pthread_mutex_t mutex_consonants;
+
+// Funcție pentru a număra vocalele și consoanele într-un cuvânt și a actualiza variabilele globale
+void *count_vowels_consonants(void *arg) {
+    char *word = (char *)arg;
+    int vowels = 0, consonants = 0;
+
+    // Numărăm vocalele și consoanele în cuvânt
+    for (int i = 0; i < strlen(word); i++) {
+        char ch = word[i];
+        if (ch >= 'a' && ch <= 'z') {
+            if (ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u') {
+                vowels++;
+            } else {
+                consonants++;
+            }
+        } else if (ch >= 'A' && ch <= 'Z') {
+            if (ch == 'A' || ch == 'E' || ch == 'I' || ch == 'O' || ch == 'U') {
+                vowels++;
+            } else {
+                consonants++;
+            }
+        }
+    }
+
+    // Actualizăm variabilele globale folosind un mutex pentru a evita condițiile de cursă
+    pthread_mutex_lock(&mutex_vowels);
+    total_vowels += vowels;
+    pthread_mutex_unlock(&mutex_vowels);
+
+    pthread_mutex_lock(&mutex_consonants);
+    total_consonants += consonants;
+    pthread_mutex_unlock(&mutex_consonants);
+
+    pthread_exit(NULL);
+}
+
+int main(int argc, char *argv[]) {
+    // Verificăm dacă a fost furnizat un nume de fișier
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    char word[100];
+    pthread_t threads[NUM_THREADS];
+    int thread_count = 0;
+
+    pthread_mutex_init(&mutex_vowels, NULL);
+    pthread_mutex_init(&mutex_consonants, NULL);
+
+    // Citim fiecare linie din fișier și creăm un fir de execuție pentru fiecare cuvânt
+    while (fscanf(file, "%s", word) != EOF) {
+        if (pthread_create(&threads[thread_count], NULL, count_vowels_consonants, (void *)word) != 0) {
+            fprintf(stderr, "Error creating thread\n");
+            exit(EXIT_FAILURE);
+        }
+        thread_count++;
+
+        // Dacă am creat NUM_THREADS fire de execuție, așteptăm finalizarea acestora
+        if (thread_count == NUM_THREADS) {
+            for (int i = 0; i < NUM_THREADS; i++) {
+                pthread_join(threads[i], NULL);
+            }
+            thread_count = 0;
+        }
+    }
+
+    // Așteptăm finalizarea firelor de execuție rămase
+    for (int i = 0; i < thread_count; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    // Afișăm rezultatele
+    printf("Total vowels: %d\n", total_vowels);
+    printf("Total consonants: %d\n", total_consonants);
+
+    // Închidem fișierul și distrugem mutex-urile
+    fclose(file);
+    pthread_mutex_destroy(&mutex_vowels);
+    pthread_mutex_destroy(&mutex_consonants);
+
+    return 0;
+}
+
+
+
+
+
+--------------------------------------------------------------------
+
+pb 4
+citire fisier cu strtok 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_LINE_LENGTH 300
+
+int main(int argc, char *argv[]) {
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+        fprintf(stderr, "parametru invalid");
+        return 0;
+    }
+
+    char marca_max[100];
+    char model_max[100];
+    int cai_max = 0;
+    char line[MAX_LINE_LENGTH];
+    while (fgets(line, MAX_LINE_LENGTH, file)) {
+        char *marca = strtok(line, ",");
+        char *model = strtok(NULL, ",");
+        int cai = atoi(strtok(NULL, ","));
+
+        if (cai > cai_max) {
+            strcpy(marca_max, marca);
+            strcpy(model_max, model);
+            cai_max = cai;
+        }
+    }
+    //masina cu cei mai multi cai
+    printf("%s %s\n", marca_max, model_max);
+
+    fclose(file);
+    return 0;
+}
+
+
+
+
+
+pb 4 + proces
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_LINE_LENGTH 300
+
+char marca_max[100];
+char model_max[100];
+int cai_max = 0;
+
+int main(int argc, char *argv[]) {
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+        fprintf(stderr, "parametru invalid");
+        return 0;
+    }
+    char line[MAX_LINE_LENGTH];
+    while (fgets(line, MAX_LINE_LENGTH, file)) {
+        pid_t pid = fork();
+        if(pid < 0) { // eroare
+                fprintf(stderr, "eroare la fork()");
+        }
+        else if(pid == 0) { // copil
+                char *marca = strtok(line, ",");
+                char *model = strtok(NULL, ",");
+                int cai = atoi(strtok(NULL, ","));
+                if (cai > cai_max) {
+                        strcpy(marca_max, marca);
+                        strcpy(model_max, model);
+                        cai_max = cai;
+                }
+        }
+        else { // parinte
+                int status;
+                wait(&status);
+                exit(0);
+        }
+    }
+    printf("%s %s\n", marca_max, model_max);
+
+    fclose(file);
+    return 0;
+}
+
+
+
+
+
+pb 4 + pipe
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#define MAX_LINE_LENGTH 300
+
+char model_max[100];
+char marca_max[100];
+int cai_max;
+
+int main(int argc, char *argv[]) {
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+        fprintf(stderr, "parametru invalid");
+        return 0;
+    }
+    char line[MAX_LINE_LENGTH];
+    while (fgets(line, MAX_LINE_LENGTH, file)) {
+    	int fdp[2];
+    	if (pipe(fdp) == -1) {
+        	fprintf(stderr, "eroare la pipe()");
+        	return 1;
+    	}
+    	pid_t pid = fork();
+    	if(pid < 0) { // eroare
+    		fprintf(stderr, "eroare la fork()");
+    		return 1;
+    	}
+    	else if(pid == 0) { // copil
+    		close(fdp[0]);
+    		char *marca = strtok(line, ",");
+        	char *model = strtok(NULL, ",");
+        	int cai = atoi(strtok(NULL, ","));
+    		int n = strlen(marca);
+        	write(fdp[1],&n,sizeof(int));
+        	int m = strlen(model);
+        	write(fdp[1],&m,sizeof(int));
+        	write(fdp[1],marca,n*sizeof(char));
+        	write(fdp[1],model,m*sizeof(char));
+                write(fdp[1],&cai,sizeof(int));
+        	close(fdp[1]);
+        	exit(0);
+        }
+
+        else { // parinte
+        	close(fdp[1]);
+    		int n,m;
+    		read(fdp[0],&n,sizeof(int));
+    		read(fdp[0],&m,sizeof(int));
+    		char *marca = (char*)malloc((n+1)*sizeof(char));
+    		char *model = (char*)malloc((m+1)*sizeof(char));
+    		read(fdp[0],marca,n);
+    		marca[n] = '\0';
+    		read(fdp[0],model,m);
+    		model[m] = '\0';
+    		int cai;
+    		read(fdp[0],&cai,sizeof(int));
+    		close(fdp[0]);
+    		if(cai > cai_max) {
+    			cai_max = cai;
+    			strcpy(marca_max, marca);
+    			strcpy(model_max, model);
+    		}
+        }
+    }
+    int status;
+    while(wait(&status) > 0);
+    printf("%s %s\n", marca_max, model_max);
+    fclose(file);
+    return 0;
+
+}
+
+
+
+pb4 + fifo
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#define MAX_LINE_LENGTH 300
+#define NUME_FIFO "lab11.fifo"
+
+char model_max[100];
+char marca_max[100];
+int cai_max;
+
+int main(int argc, char *argv[]) {
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+        fprintf(stderr, "parametru invalid");
+        return 0;
+    }
+    char line[MAX_LINE_LENGTH];
+    while (fgets(line, MAX_LINE_LENGTH, file)) {
+    	int status = mkfifo(NUME_FIFO,0666);
+    	if(status == -1) {
+    		fprintf(stderr, "eroare la mkfifo()");
+    	}
+    	pid_t pid = fork();
+    	if(pid < 0) { // eroare
+    		fprintf(stderr, "eroare la fork()");
+    		return 1;
+    	}
+    	else if(pid == 0) { // copil
+    		int fd = open(NUME_FIFO, O_WRONLY);
+    		char *marca = strtok(line, ",");
+        	char *model = strtok(NULL, ",");
+        	int cai = atoi(strtok(NULL, ","));
+    		int n = strlen(marca);
+        	write(fd,&n,sizeof(int));
+        	int m = strlen(model);
+        	write(fd,&m,sizeof(int));
+        	write(fd,marca,n*sizeof(char));
+        	write(fd,model,m*sizeof(char));
+                write(fd,&cai,sizeof(int));
+                close(fd);
+                fclose(file);
+        	exit(0);
+        }
+
+        else { // parinte
+        	int fd = open(NUME_FIFO, O_RDONLY);
+    		int n,m;
+    		read(fd,&n,sizeof(int));
+    		read(fd,&m,sizeof(int));
+    		char *marca = (char*)malloc((n+1)*sizeof(char));
+    		char *model = (char*)malloc((m+1)*sizeof(char));
+    		read(fd,marca,n);
+    		marca[n] = '\0';
+    		read(fd,model,m);
+    		model[m] = '\0';
+    		int cai;
+    		read(fd,&cai,sizeof(int));
+    		if(cai > cai_max) {
+    			cai_max = cai;
+    			strcpy(marca_max, marca);
+    			strcpy(model_max, model);
+    		}
+        }
+    }
+    int status;
+    while(wait(&status) > 0);
+    printf("%s %s\n", marca_max, model_max);
+    unlink(NUME_FIFO);
+    return 0;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------
+
+
+nu mi mai trebuie
+
+
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+int main(int argc, char ** argv){
+    // Open fifo2 for reading
+    int fd_read = open("/home/users/stud/licenta/2/324/sdar2590/fifo2", O_RDONLY);
+    if (fd_read == -1) {
+        perror("Error opening fifo2 for reading");
+        exit(EXIT_FAILURE);
+    }
+
+    // Read message from fifo2
+    int size = 0;
+    read(fd_read, &size, sizeof(int));
+    char *ps = (char*)malloc(sizeof(char) * (size + 1));
+    read(fd_read, ps, size);
+    ps[size] = '\0';
+
+    printf("Read from fifo2: %s\n", ps);
+    close(fd_read);
+
+    // Create fifo1
+    if(mkfifo("/home/users/stud/licenta/2/324/sdar2591/fifo1", 0777) == -1) {
+        perror("Error creating fifo1");
+        exit(EXIT_FAILURE);
+    }
+
+    // Open fifo1 for writing
+    int fd_write = open("/home/users/stud/licenta/2/324/sdar2591/fifo1", O_WRONLY);
+    if (fd_write == -1) {
+        perror("Error opening fifo1 for writing");
+        exit(EXIT_FAILURE);
+    }
+
+    // Write message to fifo1
+    char message[100] = "Hello from user 1!";
+    size = strlen(message);
+    write(fd_write, &size, sizeof(int));
+    write(fd_write, message, size);
+    close(fd_write);
+
+    return 0;
+}
+
+
+ 
+
+
+-------------------------
+
+
+1.	Write a program that receives strings as command line arguments and uses threads to capitalise each word. We’ll create for each argument a separate thread that will capitalise the initial letter.
+
+
+Compile: gcc -pthread capit.c,  and run ./a.out f1 f2 . . .
+If your system is missing manual pages for thread, mutex etc. function you can install it:
+sudo apt-get install manpages-posix manpages-posix-dev
+sudo apt-get install glibc-doc
+
+
+
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#define MAXLINIE 1000
+pthread_t tid[100]; //we need to refer to each thread to join them
+
+void* ucap(void* numei) {
+    printf("Thread start: %ld ...> %s\n", pthread_self(), (char*)numei);
+    
+    char numeo[100];
+    strcpy(numeo, (char*)numei);
+    if ( numeo[0]>=`a` && numeo[0]<=`z`)
+        numeo[0]+=’A’-‘a’;
+
+    printf("Thread finished: %ld > %s\n", pthread_self(), (char*)numeo);
+}
+int main(int argc, char* argv[]) {
+    int i;
+    for (i=1; argv[i]; i++) {
+        pthread_create(&tid[i], NULL, ucap, (void*)argv[i]);
+        printf("Thread created: %ld ...> %s\n", tid[i], argv[i]);
+    }
+    for (i=1; argv[i]; i++) pthread_join(tid[i], NULL);
+    printf("All threads finished\n");
+}
+
+
+
+
+
+
+
+4.	Given n pairs of command line arguments which are integer numbers, computer how many pairs have (a) and even sum, (b) and odd sum, (c) at least one the arguments is 0 or nonnumerical. We will create a thread for each pair, and three global variables for counting the three conditions, which will be accessed exclusively by each thread. We should be using a separate mutex for each – we want to correctly synchronise and have as much as possible performed in parallel.
+
+include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#define MAXLINIE 1000
+
+typedef struct {char*n1; char*n2;} PERECHE;
+
+pthread_t tid[100];
+PERECHE pair[100];
+
+pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mtxeven = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mtxodd = PTHREAD_MUTEX_INITIALIZER;
+
+int pare = 0, impare = 0, nenum = 0;
+
+
+void* computepairs(void* pair) {
+
+    int n1 = atoi(((PERECHE*)pair)->n1);
+    int n2 = atoi(((PERECHE*)pair)->n2);
+
+    if (n1 == 0 || n2 == 0) {
+        pthread_mutex_lock(&mut);
+        nenum++;
+        pthread_mutex_unlock(&mut);
+    }
+    else if ((n1 + n2) % 2 == 0) {
+        pthread_mutex_lock(&mtxeven);
+        pare++;
+        pthread_mutex_unlock(&mtxeven);
+    }
+    else {
+        pthread_mutex_lock(&mtxodd);
+        impare++;
+        pthread_mutex_unlock(&mtxodd);
+    }
+}
+
+int main(int argc, char* argv[]) {
+    int i, p, n = (argc-1)/2;
+
+    for (i = 1, p = 0; p < n; i += 2, p++) {
+        pair[p].n1 = argv[i];
+        pair[p].n2 = argv[i+1];
+        pthread_create(&tid[p], NULL, computepairs, (void*)&pair[p]);
+        // We need to allocate separate memory for each thread argument!!                   // Trying to reuse this variable will mess-up the code and the threads will //not receive their arguments correctly. Incorect to say ..., (void*)&pair);
+    }
+    for (i=0; i < n; i++)
+        pthread_join(tid[i], NULL);
+
+    printf("pairs=%d even=%d odd=%d nonnumeric=%d\n",n,pare,impare,nenum);
+
+    pthread_mutex_destroy(&mut);
+
+    pthread_mutex_destroy(&mtxodd);
+
+    pthread_mutex_destroy(&mtxeven);
+
+    return 0;
+}
+
+
+
+
+
+
+
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+typedef struct {char*n1; char*n2;} PERECHE;
+pthread_t tid[100];
+PERECHE pair;
+
+void* computepairs(void* pair) {
+    int n1 = atoi(((PERECHE*)pair)->n1);
+    int n2 = atoi(((PERECHE*)pair)->n2);
+    printf(”N1=%d N2=%d \n”, n1, n2);
+}
+
+int main(int argc, char* argv[]) {
+    int i, p, n = (argc-1)/2;
+
+    for (i = 1, p = 0; p < n; i += 2, p++) {
+        pair.n1 = argv[i];
+        pair.n2 = argv[i+1];
+        pthread_create(&tid[p], NULL, computepairs, (void*)&pair);
+        
+    }
+    for (i=0; i < n; i++) 
+        pthread_join(tid[i], NULL);
+
+    return 0;
+}
+
+
+
+
+----------------------------
+
+
+
+problema pipe lunga
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <wait.h>
+#include <dirent.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+
+
+int main()
+{
+int pipe1[2],pipe2[2],pipe3[3];
+int pid1,pid2,pid3;
+char sir[100],sir1[100],sir2[100],sir3[100];
+
+if(pipe(pipe1)<0)
+	{printf("Eroare la pipe1\n");
+	exit(1);
+	}
+
+if(pipe(pipe2)<0)
+	{printf("Eroare la pipe2\n");
+	exit(1);
+	}
+
+if(pipe(pipe3)<0)
+	{printf("Eroare la pipe3\n");
+	exit(1);
+	}
+
+pid1=fork();
+if(pid1<0)
+	{printf("Eroare la fork!\n");
+	exit(1);
+	}
+if(pid1==0)
+	{//suntem in procesul fiu --NODUL (2)
+	close(pipe1[1]);
+
+	while(read(pipe1[0],sir,100))
+	{
+	printf("Sirul de la nodul (2): %s",sir);
+	}
+	close(pipe1[0]);
+	exit(0);
+	}
+else
+{	pid2=fork();
+	if(pid2<0)
+		{
+		printf("Eroare la fork!\n");
+		exit(1);
+		}
+	else if(pid2==0)
+		{//suntem in procesul fiu --NODUL (3)
+		close(pipe2[1]);
+			
+		while(read(pipe2[0],sir,100))
+		{
+		printf("Sirul de la nodul (3): %s",sir);
+		//read(pipe2[0],sir,100);
+		}
+		close(pipe2[0]);
+		exit(0);
+		}
+	else
+	{//suntem din nou in parinte --NODUL (1)
+		pid3=fork();
+		if(pid3<0)
+                {
+                printf("Eroare la fork!\n");
+                exit(1);
+                }
+        	else if(pid3==0)
+                {//suntem in procesul fiu --NODUL (3)
+               	close(pipe3[1]);
+
+               while( read(pipe3[0],sir,100)){
+                printf("Sirul de la nodul (4): %s",sir);}
+                close(pipe3[0]);
+                exit(0);
+
+		}
+        	else
+		{//suntem in parinte --NODUL(1)
+		//wait(0);
+		close(pipe1[0]);
+                close(pipe2[0]);
+                close(pipe3[0]);
+		
+		
+		char s[100];
+		strcpy(s,"");
+		//printf("sirul %s",s);
+
+		while(strcmp(s,"gata\n")!=0)
+		{ fgets(s,30,stdin);
+	//	printf("sirul %s",s);
+		if(strcmp(s,"gata\n")!=0)
+		{	//printf("sirul ciit: %s",s);
+			//printf("caracter : %c", s[0]);
+			if(s[0]>='a' && s[0]<='z')
+				{strcpy(sir1,s);	
+				 write(pipe1[1],sir1,(strlen(sir1)+1));
+				}
+   			else if(s[0]>='A' && s[0]<='Z')
+				{strcpy(sir2,s);
+				
+				write(pipe2[1],sir2, (strlen(sir2)+1));
+         
+				}	
+				else
+				{strcpy(sir3,s);
+		
+				 write(pipe3[1],sir3, (strlen(sir3)+1));
+               				
+				}
+
+}}
+		close(pipe1[1]);
+		close(pipe2[1]);
+		close(pipe3[1]);
+
+
+                exit(0);
+		}//de la else
+
+	}//de la alt else
+}
+
+
+return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+-----------------------
+
+FIFO COMPLICAT CU 4 FISIERE
+
+
+1.c
+//procesul 1: citeste
+#include <unistd.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <fcntl.h>
+#include <wait.h>
+int main(){
+int f12;
+char sir[300],s[40];
+f12=open("fifo12",O_WRONLY);
+if(f12<0){
+	printf("Eroare la deschidere");
+	exit(1);
+}
+printf("Dati sirul: ");
+strcpy(sir,"");
+while(strcmp(s,"\n")!=0){
+	fgets(s,40,stdin);
+	if(strcmp(s,"\n")!=0)
+		strcat(sir,s);
+}
+//printf("\n %s",sir);
+write(f12,sir,strlen(sir));
+close(f12);
+exit(0);
+}
+
+
+
+
+2.c
+//procesul 2: sorteaza
+#include <unistd.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <fcntl.h>
+#include <wait.h>
+int main(){
+int i,j,k,l,f12,f24,cod;
+char line[40],sir[300],aux;
+cod=mkfifo("fifo12",0666);
+if(cod<0){
+	printf("eroare la creare pipe");
+	exit(1);
+}
+f12=open("fifo12",O_RDONLY);
+if(f12<0)
+	printf("Eroare");
+
+read(f12,sir,300);
+//printf("Am primit de la sirul:\n%s \n",sir);
+close(f12);
+unlink("fifo12");
+//sortarea sirului
+f24=open("fifo24",O_WRONLY);
+strcpy(line,"");
+j=0;
+for(i=0;i<strlen(sir);i++){
+	if(sir[i]!='\n')
+		{line[j]=sir[i];j++;}
+	else
+		{
+		if(strcmp(line,"")!=0){
+		line[j]='\0';
+		for(k=0;k<strlen(line)-1;k++)
+			{	for(l=k+1;l<strlen(line);l++){
+						if(line[k]>line[l]){
+						aux=line[k];
+						line[k]=line[l];
+						line[l]=aux;
+					}
+				}
+			}
+		line[j]='\n';
+		line[j+1]='\0';
+		j=0;
+		while(line[0]==' ')
+			strcpy(line,line+1);
+		write(f24,line,strlen(line));
+		line[0]='\0';
+		}
+	}
+}
+close(f24);
+}
+
+
+
+
+
+3.c
+//procesul 3: inlocuieste caracterul X
+
+
+#include <unistd.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <fcntl.h>
+#include <wait.h>
+int main(){
+int f34,i;
+char c,sir[300],s[40];
+f34=open("fifo34",O_WRONLY);
+if(f34<0){
+	printf("Eroare la deschidere");
+	exit(1);
+}
+printf("Dati sirul: ");
+strcpy(sir,"");
+while(strcmp(s,"\n")!=0){
+	fgets(s,40,stdin);
+	if(strcmp(s,"\n")!=0)
+		strcat(sir,s);
+}
+//printf("Sirul este:%s",sir);
+printf("Dati caracterul cu care se fie inlocuit X:");
+scanf("%s",&c);
+//printf("\n %s",sir);
+for(i=0;i<strlen(sir);i++)
+	if(sir[i]=='X')
+		sir[i]=c;
+write(f34,sir,strlen(sir));
+close(f34);
+exit(0);
+}
+
+
+
+
+4.c
+//procesul 4: afiseaza
+
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <fcntl.h>
+#include <wait.h>
+
+void afisare( char sir[30]){
+int i,j=0;
+char line[30];
+printf("Sirul este:");
+for(i=0;i<strlen(sir);i++){
+	if(sir[i]!='\n')
+		{line[j]=sir[i];j++;}
+	else
+		{
+		if(strcmp(line,"")!=0){
+		line[j]='\0';
+		if(strlen(line)>10)
+			printf("%s\n",line);
+		j=0;
+		line[0]='\0';
+		}
+	}
+}
+}
+ 
+int main(){
+int f24,f34;
+char sir1[300],sir2[300];
+if(mkfifo("fifo24",0666)==-1){
+	if(errno==17)
+		printf("Fisierul fifo24 exista deja");
+	else
+		printf("Eroare la creare");
+	exit(0);
+}
+if(mkfifo("fifo34",0666)==-1){
+	if(errno==17)
+		printf("Fisierul fifo 34 exista deja");
+	else
+		printf("Eroare la creare");
+	exit(0);
+}
+f24=open("fifo24",O_RDONLY);
+read(f24,sir1,300);
+close(f24);
+afisare(sir1);
+unlink("fifo24");
+f34=open("fifo34",O_RDONLY);
+read(f34,sir2,300);
+afisare(sir2);
+close(f34);
+unlink("fifo34");
+}
+asta este
+e pe mai multe fisiere
+4 mai exact
+si daca vrei sa o rulezi trebuie sa scrii
+:
+gcc 1.c -o 1
+gcc 2.c -o 2
+gcc 3.c -o 3
+gcc 4.c -o 4
+./4 & ./2 &
+./1
+./3
+
+
+
+
+-------------------------
+
+
+
+
+---------------------------------------
+
+client server
+
+This line contains words like beautiful and ridiculous.
+Exceptional, there's another line here!
+Oh look, the word education has five vowels.
+Unbelievable has six vowels.
+Do re mi fa so la ti do.
+And of course, the word queueing is unique.
+The quick brown fox jumps over the lazy dog.
+Special@123 and Excited!
+I'm excited to see you again.
+
+
+client.c
+// SÄƒ se scrie un program client-server care implementeazÄƒ
+// TVA-ul. Clientul transmite serverului un preÈ›, iar acesta
+// returneazÄƒ preÈ›ul cu tot cu TVA. (TVA = 24% din preÈ›ul
+// iniÈ›ial). Clientul va afiÈ™a rezultatul primit. Pentru o
+// rezolvare completÄƒ, trebuie tratate È™i excepÈ›iile.
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+#include <stdlib.h>
+#define NUME_FIFO "pipe.fifo"
+
+int main(int argc, char *argv[]) {
+	int fd = open(NUME_FIFO, O_WRONLY);
+	if(fd == -1) {
+		printf("eroare la open()\n");
+		return 1;
+	}
+	int pret;
+	scanf("%d", &pret);
+	printf("Pret: %d\n", pret); 
+	write(fd, &pret, sizeof(int));
+	close(fd);
+	fd = open(NUME_FIFO, O_RDONLY);
+	if(fd == -1) {
+		printf("eroare la open()\n");
+		return 1;
+	}
+	double pretTVA;
+	read(fd, &pretTVA, sizeof(double));
+	printf("Pret cu TVA: %f\n", pretTVA);
+	close(fd);
+	unlink(NUME_FIFO);
+	return 0;
+}
+
+
+
+server.c
+
+// SÄƒ se scrie un program client-server care implementeazÄƒ
+// TVA-ul. Clientul transmite serverului un preÈ›, iar acesta
+// returneazÄƒ preÈ›ul cu tot cu TVA. (TVA = 24% din preÈ›ul
+// iniÈ›ial). Clientul va afiÈ™a rezultatul primit. Pentru o
+// rezolvare completÄƒ, trebuie tratate È™i excepÈ›iile.
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+#include <stdlib.h>
+#define NUME_FIFO "pipe.fifo"
+
+int main(int argc, char *argv[]) {
+	int status = mkfifo(NUME_FIFO,0666);
+	if(status == -1) {
+		printf("eroare la mkfifo()\n");
+		return 1;
+	}
+	int pret;
+	int fd = open(NUME_FIFO, O_RDONLY);
+	if(fd == -1) {
+		printf("eroare la open()\n");
+		return 1;
+	}
+	read(fd, &pret, sizeof(int));
+	close(fd);
+	double pretTVA;
+	fd = open(NUME_FIFO, O_WRONLY);
+	if(fd == -1) {
+		printf("eroare la open()\n");
+		return 1;
+	}
+	pretTVA = pret + pret * 0.24;
+	write(fd, &pretTVA, sizeof(double));
+	close(fd);
+	return 0;
+}
+
+
+
+
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+// SÄƒ se scrie un program C care creeazÄƒ un proces copil cu care 
+// comunicÄƒ prin pipe.
+// Procesul pÄƒrinte citeÅŸte de la tastaturÄƒ un numÄƒr natural ÅŸi Ã®l
+// trimite prin pipe procesului copil,
+// iar procesul copil verificÄƒ ÅŸi afiÅŸeazÄƒ dacÄƒ acest numÄƒr este par 
+// sau impar.
+
+int main(int argc, char* argv[]) {
+	int fdp[2];
+	if(pipe(fdp) == -1) {
+		fprintf(stderr, "eroare la pipe()");
+	}
+	pid_t pid = fork();
+	if(pid < 0) {
+		fprintf(stderr, "eroare la fork()");
+		exit(1);
+	} else if(pid == 0) {
+		close(fdp[1]);
+		int number;
+		read(fdp[0],&number,sizeof(int));
+		if(number % 2 == 0) {
+			printf("Este par!\n");
+		}
+		else {
+			printf("Este impar!\n");
+		}
+		close(fdp[0]);
+	} else {
+		close(fdp[0]);
+		int number;
+		scanf("%d", &number);
+		write(fdp[1],&number,sizeof(int));
+		close(fdp[1]);
+	}
+	return 0;
+}
+
+---------------------------------
+
+preg 2
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#define NUME_FIFO "pipe.fifo"
+
+// SÄƒ se scrie un program C care creeazÄƒ un proces copil cu care 
+// comunicÄƒ prin pipe.
+// Procesul pÄƒrinte citeÅŸte de la tastaturÄƒ un numÄƒr natural ÅŸi Ã®l 
+// trimite prin pipe procesului copil,
+// iar procesul copil verificÄƒ ÅŸi afiÅŸeazÄƒ dacÄƒ acest numÄƒr este 
+// prim.
+
+int main(int argc, char* argv[]) {
+	int status = mkfifo(NUME_FIFO,0666);
+	if(status == -1) {
+		fprintf(stderr, "eroare la mkfifo()");
+		return 1;
+	}
+	pid_t pid = fork();
+	if(pid < 0) {
+		fprintf(stderr, "eroare la fork()");
+		return 1;
+	}
+	else if(pid == 0) {
+		int fd = open(NUME_FIFO, O_RDONLY);
+		if(fd == -1) {
+			fprintf(stderr, "eroare la open()");
+			return 1;
+		}
+		int number;
+		read(fd, &number, sizeof(int));
+		int d = 2, ok = 1;
+		while(d <= number /2) {
+			if(number % d == 0) {
+				ok = 0;
+				number = number / d;
+			}
+			d++;
+		}
+		if(ok == 1) {
+			printf("este prim\n");
+		}
+		else {
+			printf("nu este prim\n");
+		}
+	} else {
+		int number;
+		scanf("%d", &number);
+		int fd = open(NUME_FIFO, O_WRONLY);
+		if(fd == -1) {
+			fprintf(stderr, "eroare la open()");
+			return 1;
+		}
+		write(fd, &number, sizeof(int));
+		close(fd);
+	}
+	unlink(NUME_FIFO);
+	return 0;
+}
+
+
+
+----------------------- preg 3
+
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+// SÄƒ se scrie un program C care creeazÄƒ un proces copil cu care 
+// comunicÄƒ prin pipe.
+// Procesul pÄƒrinte citeÅŸte de la tastaturÄƒ douÄƒ numere Ã®ntregi pe 
+// care le trimite prin pipe procesului copil,
+// iar procesul copil returneazÄƒ prin pipe suma lor.
+
+int main(int argc, char* argv[]) {
+	int fdp[2];
+	if(pipe(fdp) == -1) {
+		fprintf(stderr, "eroare la pipe()");
+		return 1;
+	}
+	pid_t pid = fork();
+	if(pid == -1) { // eroare
+		fprintf(stderr, "eroare la fork()");
+		exit(1);
+	} else if(pid == 0) { // c8chil
+		int number1, number2;
+		read(fdp[0],&number1,sizeof(int));
+		read(fdp[0],&number2,sizeof(int));
+		close(fdp[0]);
+		int sum = number1 + number2;
+		write(fdp[1],&sum,sizeof(int));
+		close(fdp[1]);
+	} else { // parent
+		int number1, number2;
+		scanf("%d", &number1);
+		scanf("%d", &number2);
+		write(fdp[1],&number1,sizeof(int));
+		write(fdp[1],&number2,sizeof(int));
+		close(fdp[1]); // 1 write
+		int status;
+		wait(&status);
+		int sum;
+		read(fdp[0],&sum,sizeof(int));
+		printf("suma este %d\n", sum);
+		close(fdp[0]); // 0 read
+	}
+	return 0;
+}
+
+ 
+
+
+==================================================
+
+exercitii info romana
+exercitii info engleza
+POZE TELEFON SO
+
+
+EXERCITIUL 2 DARIUS - VASTI RDONLY WRONLY
+
+EXERCITIUL 3 DARIUS - VASTI RDONLY WRONLY BIDIRECTIONAT
+
+EXERCITIUL LAB 13 PB ANAF SI cealalta suma nr - thread  
+                                              - procese
+
+
+
+
+====================================
+
+
+ati si venit la mine la banca si v-am aratat, v-am zis numele si m-ati notat mereu
+
+* - lab 321 probleme grep + sed + awk - recuperare cu doamna Alina Calin
+* - probleme grep si sed individual - ne ati proiectat pe tabla 3 probleme de rezolvat individual
+* - problema procese fork lista numere -> numarare car sunt pare impare 
+* - problema lab 13 n procese de la 0 la m, thread uri / procese
+
+* tema laborator vacanta paste
+
+
+
+
+
+
+======================================================
+
+  ------------------------------------
+validare argumente
+int main(int argc, char *argv[]){
+
+if (argc != 2) {
+        fprintf(stderr, "Usage: %s <N>\n", argv[0]);
+        exit(1);
+    }
+
+-----------------------------
+if (argc < 3 || argc % 2 != 1) 
+{  fprintf(stderr, "Usage: %s <str1> <str2> <str3> <str4> ...\n", argv>       
+  return 1;
+}
+
+
+-------------------------------------
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+        return EXIT_FAILURE; // return 1;
+    }
+
+    FILE *file = fopen(argv[1], "r");
+    if (!file) {
+        perror("Error opening file");
+        return EXIT_FAILURE;
+    }
+
+    // Restul codului pentru procesarea fișierului
+    // ...
+
+    fclose(file);
+    return EXIT_SUCCESS;
+}
+
+------------------------------------
+int main(int argc, char* argv[]){
+    int i;
+	if(argc<3){
+		printf("Usage: %s <nr_ghisee> <fisier>",argv[0]);
+        return 1;
+    }
+    int nr_ghisee=atoi(argv[1]);
+    FILE* fisier=fopen(argv[2],"r");
+    if(!fisier){
+        perror("eroare la deschirerea fisierului");
+        return 2;
+    }
+
+
+//incepem citirea din fisier; citim linie cu linie
+    char linie[1000];
+    while(fgets(linie,100,fisier))
+    {
+        //pt fiecare linie obtinem separat nume, nr ghiseului si venitul
+        char *nume;
+        int nr_ghiseu=0;
+        int venit=0;
+        char *p=strtok(linie,",");
+        nume=p;
+        p=strtok(NULL,",");
+        nr_ghiseu=atoi(p);
+        p=strtok(NULL,",");
+        venit=atoi(p);
+           
+        //trimite prin pipe-ul ghiseului corespunzator numele si venitul
+        int nlen=strlen(nume);
+        write(pipesend[nr_ghiseu][1],&nlen,sizeof(int));
+        write(pipesend[nr_ghiseu][1],nume,nlen);   
+        write(pipesend[nr_ghiseu][1],&venit,sizeof(int));    
+    }
+
+
+
+
+----------------
+
+validare pipe
+int p12[2];
+
+    if (pipe(p12) == -1) {
+        perror("Error creating pipe");
+        exit(1);
+    }
+
+
+---------
+
+validare fifo
+
+    const char *fifo_name = "p7fifo";
+
+    if (mkfifo(fifo_name, 0666) == -1) {
+        if (errno != EEXIST) {
+            perror("Error creating FIFO");
+            exit(1);
+        }
+    }
+
+
+
+ int fd=open("p1fifo",O_WRONLY);  /// int fd=open("p1fifo",O_RDONLY);l
+  if (fd == -1) {
+            perror("Eroare deschidere FIFO");
+            exit(1);
+        }
+
+
+ 
+
+--------------------------
+validare fork
+int pid=fork();
+
+ if (pid==-1){
+        perror("Eroare fork");
+
+        exit(1);
+}
+
+------------------------
+
+
+
+
+
+
+
+
+

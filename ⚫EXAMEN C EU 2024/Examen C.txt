@@ -1,0 +1,1282 @@
+
+
+----pregatire
+
+
+------------------------------ pr 8
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <signal.h>
+
+int main(int argc, char* argv[]) {
+    FILE* f = fopen(argv[1], "r");
+    if (f == NULL) {
+        fprintf(stderr, "parametru invalid\n");
+        return 1;
+    }
+    
+    int nr_films = 0;
+    int nr_series = 0;
+
+    char line[512];
+    while (fgets(line, sizeof(line), f) != NULL) {
+        pid_t pid = fork();
+        if (pid < 0) {
+            fprintf(stderr, "Error in waitpid\n");
+            exit(EXIT_FAILURE);
+        }
+        else if (pid == 0) {
+            char type[10];
+            char nume[20];
+            int durata;
+            int an;
+            char tip[20];
+            sscanf(line, "%[^;];%[^;];%d;%d;%[^;]", nume, type, &durata, &an, tip);
+            if (strcmp(type, "film") == 0) {
+                exit(EXIT_SUCCESS + 1);
+            }
+            else if (strcmp(type, "serial") == 0) {
+                exit(EXIT_SUCCESS + 2);
+            }
+            else {
+                exit(EXIT_FAILURE);
+            }
+            // Add the following line to exit the child process
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    int status;
+    pid_t child_pid;
+    while ((child_pid = wait(&status)) > 0) {
+        if (WIFEXITED(status)) {
+            int exit_status = WEXITSTATUS(status);
+            if (exit_status == EXIT_SUCCESS + 1) {
+                nr_films++;
+            }
+            else if (exit_status == EXIT_SUCCESS + 2) {
+                nr_series++;
+            }
+        }
+    }
+    
+    fclose(f);
+    printf("%d\n", nr_films);
+    printf("%d\n", nr_series);
+    return 0;
+}
+
+-------------------------------------------- pr 9
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <signal.h>
+
+int main(int argc, char* argv[]) {
+    FILE* f = fopen(argv[1], "r");
+    if (f == NULL) {
+        fprintf(stderr, "parametru invalid\n");
+        return 1;
+    }
+
+    int nr_films = 0;
+    int nr_series = 0;
+
+    int fd[2];
+    if (pipe(fd) == -1) {
+        fprintf(stderr, "Error creating pipe\n");
+        return 1;
+    }
+
+    char line[512];
+    while (fgets(line, sizeof(line), f) != NULL) {
+        pid_t pid = fork();
+        if (pid < 0) {
+            fprintf(stderr, "Error in waitpid\n");
+            exit(EXIT_FAILURE);
+        }
+        else if (pid == 0) {
+            close(fd[0]);  // Close the read end of the pipe
+
+            char type[10];
+            char nume[20];
+            int durata;
+            int an;
+            char tip[20];
+            sscanf(line, "%[^;];%[^;];%d;%d;%[^;]", nume, type, &durata, &an, tip);
+            if (strcmp(type, "film") == 0) {
+                write(fd[1], "film", sizeof("film"));
+                exit(EXIT_SUCCESS);
+            }
+            else if (strcmp(type, "serial") == 0) {
+                write(fd[1], "serial", sizeof("serial"));
+                exit(EXIT_SUCCESS);
+            }
+            else {
+                write(fd[1], "other", sizeof("other"));
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    close(fd[1]);  // Close the write end of the pipe
+
+    char buffer[10];
+    while (read(fd[0], buffer, sizeof(buffer)) > 0) {
+        if (strcmp(buffer, "film") == 0) {
+            nr_films++;
+        }
+        else if (strcmp(buffer, "serial") == 0) {
+            nr_series++;
+        }
+    }
+
+    fclose(f);
+    printf("%d\n", nr_films);
+    printf("%d\n", nr_series);
+    return 0;
+}
+
+
+
+
+
+------------------------------ EXAMEN 1
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <ctype.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        perror("parametru invalid\n");
+        return 1;
+    }
+    
+    FILE* f;
+    f = fopen(argv[1], "r");
+    if (f == NULL) {
+        perror("parametru invalid\n");
+        return 1;
+    }
+    
+    int count = 0;
+    char line[256];
+    
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        return 1;
+    }
+    
+    int nrLinii = 0;
+    int lung[10];
+    
+    while (fgets(line, 256, f) != NULL) {
+        nrLinii++;
+        lung[nrLinii] = strlen(line);
+    }
+    
+    fseek(f, 0, SEEK_SET);
+    
+    for (int j = 1; j <= nrLinii; j++) {
+        fgets(line, 256, f);
+        
+        pid_t pid = fork();
+
+        if (pid == -1) {
+            perror("parametru invalid\n");
+            fclose(f);
+            exit(1);
+        } else if (pid == 0) {
+            //copil
+            int trimis = 0;
+            for (int i = 0; i < lung[j]; i++) {
+                if (isdigit(line[i])) {
+                    trimis++;
+                }
+            }
+            write(pipefd[1], &trimis, sizeof(int));
+            fclose(f);
+            exit(0);
+        } else {
+            //parinte
+            int primit;
+            int status;
+            wait(&status);
+            if (WIFEXITED(status)) {
+                if (WEXITSTATUS(status) == 0) {
+                    read(pipefd[0], &primit, sizeof(int));
+                    count += primit;
+                }
+            }
+        }
+    }
+    
+    close(pipefd[0]);
+    close(pipefd[1]);
+    
+    fclose(f);
+    
+    printf("%d\n", count);
+    
+    return 0;
+}
+
+------------------------------ EXAMEN 2
+ 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <ctype.h>
+
+int main(int argc, char *argv[]) {
+    
+    if (argc != 2) {
+        perror("parametru invalid\n");
+        return 1;
+    }
+    
+    FILE* f;
+    f = fopen(argv[1], "r");
+    if (f == NULL) {
+        perror("parametru invalid\n");
+        return 1;
+    }
+    
+    int nrLinii = 0;
+    int lung[10];
+    char line[256];
+    
+    while (fgets(line, 256, f) != NULL) {
+        nrLinii++;
+        lung[nrLinii] = strlen(line);
+    }
+    
+    fseek(f, 0, SEEK_SET);
+    for (int i = 1; i <= nrLinii; i++) {
+        fgets(line, 256, f);
+
+        pid_t pid = fork();
+        if (pid == -1) {
+            perror("parametru invalid\n");
+            fclose(f);
+            exit(1);
+        } else if (pid == 0) {
+            //copil
+            int count = 0;
+            for (int j = 1; j < lung[i]; j++) {
+                if (line[j] == ' ') {
+                    count++;
+                }
+            }
+            count++;
+            printf("%d\n", count);
+            fclose(f);
+            exit(0);
+        } else {
+            //parinte
+            int status;
+            wait(&status);
+        }
+    }
+    
+    fclose(f);
+    
+    return 0;
+}
+------------------------------ EXAMEN 3
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <ctype.h>
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        perror("parametru invalid\n");
+        return 1;
+    }
+    
+    int suma = 0;
+    
+    for (int i = 1; i <= argc; i++) {
+        pid_t pid = fork();
+        if (pid == -1) {
+            perror("parametru invalid\n");
+            exit(1);
+        } else if (pid == 0) {
+            //copil
+            int ok = 0;
+            if (!isdigit(argv[i][0]) && argv[i][0] != '-') {
+                ok = 1;
+            }
+            for (int j = 1; j < strlen(argv[i]); j++) {
+                if (!isdigit(argv[i][j])) {
+                    ok = 1;
+                }
+            }
+            if (ok == 1) {
+                exit(1);
+            } else {
+                exit(2);
+            }
+        } else {
+            //parinte
+            int status;
+            wait(&status);
+            if (WIFEXITED(status)) {
+                if (WEXITSTATUS(status) == 1) {
+                    perror("parametru invalid\n");
+                    return 1;
+                } else if (WEXITSTATUS(status) == 2) {
+                    int nr = atoi(argv[i]);
+                    suma += nr;
+                }
+            }
+        }
+    }
+    
+    printf("%d\n", suma);
+    return 0;
+}
+
+------------------------------ EXAMEN 4
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <ctype.h>
+
+int main(int argc, char *argv[]) {
+    char file[256];
+    strcpy(file, argv[1]);
+    
+    FILE* f;
+    
+    f = fopen(file, "r");
+    if (f == NULL) {
+        fprintf(stderr, "parametru invalid\n");
+        return 1;
+    }
+    
+    int baieti = 0;
+    int fete = 0;
+    char line[256];
+    
+    int nrLinii = 0;
+    
+    while (fgets(line, 256, f) != NULL) {
+        nrLinii++;
+    }
+    
+    fseek(f, 0, SEEK_SET);
+    
+    for (int j = 1; j <= nrLinii; j++) {
+        fgets(line, 256, f);
+        pid_t pid = fork();
+        if (pid == -1) {
+            fprintf(stderr, "Fork error\n");
+            exit(1);
+        } else if (pid == 0) {
+            int ok = 0;
+            if (strlen(line) != 14) {                ok = 1;
+            } else if (line[0] == '0') {
+                ok = 1;
+            } else {
+                for (int i = 1; i < strlen(line) - 1; i++) {
+                    if (line[i] < '0' || line[i] > '9' ) {
+                        ok = 1;
+                    }
+                }
+            }
+            if (ok == 1) {
+                exit(1);
+            } else {
+                int firstDigit = line[0] - '0';
+                if (firstDigit % 2 == 0) {
+                    exit(3);
+                } else {
+                    exit(4);
+                }
+            }
+        } else {
+            int status;
+            wait(&status);
+
+            if (WIFEXITED(status)) {
+                if (WEXITSTATUS(status) == 3) {
+                    fete += 1;
+                } else if (WEXITSTATUS(status) == 4) {
+                    baieti += 1;
+                }
+            }
+        }
+    }
+    fclose(f);
+    printf("fete:%d baieti:%d\n", fete, baieti);
+    return 0;
+}
+
+
+
+------------------------------ 
+
+
+
+pb 4 exam
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <ctype.h>
+
+int main(int argc, char *argv[]) {
+    int suma = 0;
+//    int pipefd[2];
+//    if (pipe(pipefd) == -1) {
+//        perror("pipe");
+//        return 1;
+//    }
+    for (int i = 1; i <= argc; i++) {
+        pid_t pid = fork();
+        if (pid == -1) {
+            perror("fork\n");
+            exit(1);
+        } else if (pid == 0) {
+            //copil
+//            close(pipefd[0]);
+            
+            int ok = 0;
+            for(int j = 0; j < strlen(argv[i]); j++) {
+                if (!isdigit(argv[i][j]) && argv[i][j] != '-') {
+                    ok = 1;
+                }
+            }
+            if (ok == 1) {
+                exit(1);
+            } else {
+                exit(2);
+            }
+            
+        } else {
+            //parinte
+            int status;
+            wait(&status);
+            if (WIFEXITED(status)) {
+                if (WEXITSTATUS(status) == 1) {
+                    perror("parametru invalid\n");
+                    return 1;
+                } else if (WEXITSTATUS(status) == 2) {
+                    int nr = atoi(argv[i]);
+                    suma += nr;
+                }
+            }
+        }
+    }
+    printf("%d\n", suma);
+    return 0;
+}
+
+
+
+
+
+---------------------------------------------------------
+
+
+pb 4' exam
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <ctype.h>
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        perror("parametru invalid\n");
+        return 1;
+    }
+    
+    int suma = 0;
+    
+    for (int i = 1; i <= argc; i++) {
+        pid_t pid = fork();
+        if (pid == -1) {
+            perror("parametru invalid\n");
+            exit(1);
+        } else if (pid == 0) {
+            //copil
+            int ok = 0;
+            if (!isdigit(argv[i][0]) && argv[i][0] != '-') {
+                ok = 1;
+            }
+            for (int j = 1; j < strlen(argv[i]); j++) {
+                if (!isdigit(argv[i][j])) {
+                    ok = 1;
+                }
+            }
+            if (ok == 1) {
+                exit(1);
+            } else {
+                exit(2);
+            }
+        } else {
+            //parinte
+            int status;
+            wait(&status);
+            if (WIFEXITED(status)) {
+                if (WEXITSTATUS(status) == 1) {
+                    perror("parametru invalid\n");
+                    return 1;
+                } else if (WEXITSTATUS(status) == 2) {
+                    int nr = atoi(argv[i]);
+                    suma += nr;
+                }
+            }
+        }
+    }
+    
+    printf("%d\n", suma);
+    return 0;
+}
+
+
+
+---------------------------------------------------------
+
+
+pb 5 exam
+
+
+1090523123456
+025481684521132168
+2090523624351
+2090523624362
+abc123 732
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <ctype.h>
+
+int main(int argc, char *argv[]) {
+    char file[256];
+    strcpy(file, argv[1]);
+    
+    FILE* f;
+    
+    f = fopen(file, "r");
+    if (f == NULL) {
+        fprintf(stderr, "parametru invalid\n");
+        return 1;
+    }
+    
+    int baieti = 0;
+    int fete = 0;
+    char line[256];
+    
+    int nrLinii = 0;
+    
+    while (fgets(line, 256, f) != NULL) {
+        nrLinii++;
+    }
+    
+    fseek(f, 0, SEEK_SET);
+    
+    for (int j = 1; j <= nrLinii; j++) {
+        fgets(line, 256, f);
+        pid_t pid = fork();
+        if (pid == -1) {
+            fprintf(stderr, "Fork error\n");
+            exit(1);
+        } else if (pid == 0) {
+            int ok = 0;
+            if (strlen(line) != 14) {                ok = 1;
+            } else if (line[0] == '0') {
+                ok = 1;
+            } else {
+                for (int i = 1; i < strlen(line) - 1; i++) {
+                    if (line[i] < '0' || line[i] > '9' ) {
+                        ok = 1;
+                    }
+                }
+            }
+            if (ok == 1) {
+                exit(1);
+            } else {
+                int firstDigit = line[0] - '0';
+                if (firstDigit % 2 == 0) {
+                    exit(3);
+                } else {
+                    exit(4);
+                }
+            }
+        } else {
+            int status;
+            wait(&status);
+
+            if (WIFEXITED(status)) {
+                if (WEXITSTATUS(status) == 3) {
+                    fete += 1;
+                } else if (WEXITSTATUS(status) == 4) {
+                    baieti += 1;
+                }
+            }
+        }
+    }
+    fclose(f);
+    printf("fete:%d baieti:%d\n", fete, baieti);
+    return 0;
+}
+
+-----------------------------------
+
+
+5' imbunatatit 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <ctype.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        perror("parametru invalid\n");
+        return 1;
+    }
+    FILE* f;
+    f = fopen(argv[1], "r");
+    
+    if (f == NULL) {
+        perror("parametru invalid\n");
+        return 1;
+    }
+    
+    char line[256];
+    int nrLinii = 0;
+    while (fgets(line, 256, f) != NULL) {
+        nrLinii++;
+    }
+    
+    fseek(f, 0, SEEK_SET);
+    
+    int baieti = 0, fete = 0;
+    
+    for (int i = 1; i <= nrLinii; i++) {
+        fgets(line, 256, f);
+        pid_t pid = fork();
+        if (pid == -1) {
+            perror("parametru invalid\n");
+            exit(1);
+        } else if (pid == 0) {
+            //copil
+            int ok = 0;
+            if (strlen(line) != 14) {
+                ok = 1;
+            } else if (line[0] == '0') {
+                ok = 1;
+            } else {
+                printf("%s\n", line);
+                for (int j = 0; j < strlen(line) - 1; j++) {
+                    if (!isdigit(line[j])) {
+                        ok = 1;
+                        break;
+                    }
+                }
+            }
+            
+            if (ok == 1) {
+                exit(1);
+            } else {
+                int fs = line[0] - '0';
+                if (fs % 2 == 0) {
+                    exit(2);
+                } else {
+                    exit(3);
+                }
+            }
+        } else {
+            //parinte
+            int status;
+            wait(&status);
+            if (WIFEXITED(status)) {
+                if (WEXITSTATUS(status) == 2) {
+                    fete++;
+                } else if (WEXITSTATUS(status) == 3) {
+                    baieti++;
+                }
+            }
+        }
+    }
+    
+    fclose(f);
+    
+    printf("%d %d\n", baieti, fete);
+    
+    return 0;
+}
+
+
+ 
+
+pb 8 exam
+
+---------------------------------------------------------
+
+
+pb 2 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+
+int main(int argc, char *argv[]) {
+    char *dir = argv[1];
+    
+    for (int i = 2; i < argc; i++) {
+        char file[256];
+        strcpy(file, dir);
+        strcat(file, "/");
+        strcat(file, argv[i]);
+        
+        FILE* f;
+        char line[256];
+        
+        f = fopen(file, "r");
+        
+        if (f == NULL) {
+            fprintf(stderr, "parametru invalid\n");
+            return 1;
+        }
+        
+        int count = 0;
+        
+        while (fgets(line, 256, f) != NULL) {
+            count = count + 1;
+        }
+        
+        count = count - 1;
+        
+        fprintf(stdout, "%d\n", count);
+        
+        fclose(f);
+    }
+    return 0;
+}
+
+
+------------------------------------------
+
+pb 3
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main(int argc, char *argv[]) {
+    char *dir = argv[1];
+    
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        exit(1);
+    }
+    
+    for (int i = 2; i < argc; i++) {
+        char file[256];
+        strcpy(file, dir);
+        strcat(file, "/");
+        strcat(file, argv[i]);
+        
+        FILE* f;
+        char line[256];
+        
+        int pid = fork();
+        
+        if (pid == -1) {
+            perror("fork");
+            exit(1);
+        } else if (pid == 0) {
+            // copil
+            
+            close(pipefd[0]);  // Ã®nchide capÄƒtul de citire al pipe-ului Ã®n copil
+            
+            f = fopen(file, "r");
+            
+            if (f == NULL) {
+                fprintf(stderr, "parametru invalid\n");
+                exit(1);
+            }
+            
+            int count = 0;
+            
+            while (fgets(line, 256, f) != NULL) {
+                count = count + 1;
+            }
+            
+            count = count - 1;
+            
+            // trimite rezultatul cÄƒtre procesul pÄƒrinte prin pipe
+            write(pipefd[1], &count, sizeof(count));
+            close(pipefd[1]);
+            
+            fclose(f);
+            exit(0);
+        } else {
+            // pÄƒrinte
+            
+            close(pipefd[1]);  // Ã®nchide capÄƒtul de scriere al pipe-ului Ã®n pÄƒrinte
+            
+            int status;
+            wait(&status);
+            
+            if (WIFEXITED(status) && WEXITSTATUS(status)) {
+                return 1;
+            }
+            
+            int child_count=0;
+            
+            // primeÈ™te rezultatul de la procesul copil prin pipe
+            read(pipefd[0], &child_count, sizeof(child_count));
+            close(pipefd[0]);
+            
+            if (child_count) {
+                printf("%d\n", child_count);
+            }
+        }
+    }
+    
+    return 0;
+}
+
+
+--------------------------------------------------------
+
+pb 4 fifo
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/wait.h>
+
+#define NUME_FIFO "fifo"
+
+int main(int argc, char *argv[]) {
+    char *dir = argv[1];
+    
+    if (mkfifo(NUME_FIFO, 0666) == -1) {
+        perror("mkfifo");
+        exit(1);
+    }
+    
+    for (int i = 2; i < argc; i++) {
+        char file[256];
+        strcpy(file, dir);
+        strcat(file, "/");
+        strcat(file, argv[i]);
+        
+        FILE* f;
+        char line[256];
+        
+        int pid = fork();
+        
+        if (pid == -1) {
+            perror("fork");
+            exit(1);
+        } else if (pid == 0) {
+            // copil
+            
+            int pipefd_write = open(NUME_FIFO, O_WRONLY);
+            if (pipefd_write == -1) {
+                perror("open");
+                exit(1);
+            }
+            
+            f = fopen(file, "r");
+            
+            if (f == NULL) {
+                exit(1);
+            }
+            
+            int count = 0;
+            
+            while (fgets(line, 256, f) != NULL) {
+                count = count + 1;
+            }
+            
+            count = count - 1;
+            
+            // trimite rezultatul cÄƒtre procesul pÄƒrinte prin pipe
+            write(pipefd_write, &count, sizeof(count));
+            
+            fclose(f);
+            close(pipefd_write);
+            
+            exit(0);
+        } else {
+            // pÄƒrinte
+            
+            int pipefd_read = open(NUME_FIFO, O_RDONLY);
+            if (pipefd_read == -1) {
+                perror("open");
+                exit(1);
+            }
+            
+            int status;
+            wait(&status);
+            
+            if (WIFEXITED(status) && WEXITSTATUS(status)) {
+                fprintf(stderr, "parametru invalid\n");
+                return 1;
+            }
+            
+            int child_count=0;
+            
+            // primeÈ™te rezultatul de la procesul copil prin pipe
+            read(pipefd_read, &child_count, sizeof(child_count));
+            
+            close(pipefd_read);
+            
+            if (child_count) {
+                printf("%d\n", child_count);
+            }
+        }
+    }
+    
+    if (unlink(NUME_FIFO) == -1) {
+        perror("unlink");
+        exit(1);
+    }
+    
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+===================================
+
+
+
+ceva din lab 11
+
+
+int main(int argc, char* argv[]) {
+    FILE* f = fopen(argv[1], "r");
+    if (f == NULL) {
+        fprintf(stderr, "parametru invalid\n");
+        return 1;
+    }
+
+    int nr_films = 0;
+    int nr_series = 0;
+    char line[512];
+    while (fgets(line, sizeof(line), f) != NULL){
+    int pid = fork();
+    if(pid < 0){
+        fprintf(stderr, "Error in waitpid\n");
+        return 1;
+    } else if (pid == 0) {
+        char type[10];
+        char nume[20];
+        int durata;
+        int an;
+        char tip[20];
+        sscanf(line, "%[^;];%[^;];%d;%d;%[^;]", nume, type, &durata, &an, tip);
+        if (strcmp(type, "film") == 0) {
+            exit(5);
+        }
+        if (strcmp(type, "serial") == 0) {
+            exit(6);
+        }
+        exit(0);
+    }else if (pid>0){
+        int status;
+        if(wait(&status)>0){
+        int exit_status = WEXITSTATUS(status);
+            if (exit_status == 5) {
+                nr_films++;
+            } else if (exit_status == 6) {
+                nr_series++;
+            }else{
+                break;
+            }}
+    }
+    }
+    fclose(f);
+    printf("%d\n", nr_films);
+    printf("%d\n", nr_series);
+    return 0;
+}
+————————
+	1	int main(int argc, char* argv[]): This is the main function of the program, the entry point of execution. It takes two arguments: argc, the number of command-line arguments, and argv, an array of strings containing the command-line arguments.
+	2	FILE* f = fopen(argv[1], "r");: This line opens a file specified by the second command-line argument (argv[1]) for reading and assigns the file pointer to the variable f.
+	3	if (f == NULL) { ... }: This condition checks if the file opening was successful by checking if f is a null pointer. If the file opening fails, an error message is printed, and the program returns 1, indicating an error.
+15-16. int nr_films = 0; and int nr_series = 0;: These lines initialize two integer variables nr_films and nr_series to 0, which will be used to count the number of films and series.
+	17	char line[512];: This declares a character array line with a size of 512, which will be used to store lines read from the file.
+	18	while (fgets(line, sizeof(line), f) != NULL) { ... }: This loop reads lines from the file using fgets until there are no more lines to read. Each line is stored in the line array.
+	19	int pid = fork();: This line creates a new process by forking the current process. The fork function returns the process ID of the child process in the parent process and 0 in the child process.
+	20	if (pid < 0) { ... }: This condition checks if the fork function failed to create a new process. If the condition is true, an error message is printed, and the program returns 1.
+	22	char type[10];, char nume[20];, int durata;, int an;, char tip[20];: These lines declare variables that will be used to store parsed values from the line string.
+	23	sscanf(line, "%[^;];%[^;];%d;%d;%[^;]", nume, type, &durata, &an, tip);: This line uses sscanf to parse the values from the line string based on the given format string. The parsed values are stored in the respective variables.
+28-35. This block of code checks the value of type and exits the child process with different exit codes based on the comparison results. If type is "film", the child process exits with code 5. If type is "serial", the child process exits with code 6. Otherwise, the child process exits with code 0.
+	39	int status;: This line declares a variable status that will be used to store the exit status of the child process.
+	40	if (wait(&status) > 0) { ... }: This line waits for the child process to complete and stores the exit status in the status variable. If the return value of wait is greater than 0, indicating the child process terminated successfully, the condition is true.
+42-48. This block of code checks the exit status of the child process and increments the respective counter (nr_films or nr_series) based on the exit status value. If the exit status is neither 5 nor 6, the loop is terminated using break.
+	53	fclose(f);: This line closes the file opened earlier using fopen.
+54-55. printf("%d\n", nr_films); and printf("%d\n", nr_series);: These lines print the values of nr_films and nr_series, respectively.
+	57	return 0;: This line indicates successful program execution and returns 0 to the operating system.
+-------------
+int fd[2];
+    if (pipe(fd) == -1) {
+        fprintf(stderr, "Error creating pipe\n");
+        return 1;
+    }
+
+    char line[512];
+    while (fgets(line, sizeof(line), f) != NULL) {
+        pid_t pid = fork();
+        if (pid < 0) {
+            fprintf(stderr, "Error in waitpid\n");
+            exit(EXIT_FAILURE);
+        }
+        else if (pid == 0) {
+            close(fd[0]);  // Close the read end of the pipe
+
+            char type[10];
+            char nume[20];
+            int durata;
+            int an;
+            char tip[20];
+            sscanf(line, "%[^;];%[^;];%d;%d;%[^;]", nume, type, &durata, &an, tip);
+            if (strcmp(type, "film") == 0) {
+                write(fd[1], "film", sizeof("film"));
+                exit(EXIT_SUCCESS);
+            }
+            else if (strcmp(type, "serial") == 0) {
+                write(fd[1], "serial", sizeof("serial"));
+                exit(EXIT_SUCCESS);
+            }
+            else {
+                write(fd[1], "other", sizeof("other"));
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    close(fd[1]);
+
+    char buffer[10];
+    ssize_t read_bytes;
+    while ((read_bytes = read(fd[0], buffer, sizeof(buffer))) > 0) {
+        if (strncmp(buffer, "film", read_bytes) == 0) {
+            nr_films++;
+        }
+        else if (strncmp(buffer, "serial", read_bytes) == 0) {
+            nr_series++;
+        }
+    }
+----
+Certainly! Here's an explanation of the code line by line:
+
+1. `int fd[2];`: This line declares an array `fd` with two elements. The array will be used to store file descriptors for the read and write ends of a pipe.
+
+3. `if (pipe(fd) == -1) { ... }`: This line creates a pipe using the `pipe` function. If the function returns `-1`, it means an error occurred while creating the pipe. In that case, an error message is printed, and the program returns `1` to indicate an error.
+
+5. `char line[512];`: This line declares a character array `line` with a size of 512, which will be used to store lines read from the file.
+
+6. `while (fgets(line, sizeof(line), f) != NULL) { ... }`: This loop reads lines from the file using `fgets` until there are no more lines to read. Each line is stored in the `line` array.
+
+8. `pid_t pid = fork();`: This line creates a new process by forking the current process. The `fork` function returns the process ID of the child process in the parent process and `0` in the child process.
+
+10. `if (pid < 0) { ... }`: This condition checks if the `fork` function failed to create a new process. If the condition is true, an error message is printed, and the program exits with `EXIT_FAILURE`.
+
+14. `close(fd[0]);`: This line closes the read end of the pipe in the child process. The child process only needs the write end of the pipe to communicate with the parent process.
+
+17-32. This block of code runs in the child process. It parses the values from the `line` string and writes a corresponding string (`"film"`, `"serial"`, or `"other"`) to the write end of the pipe using the `write` function. Then, it exits the child process with `EXIT_SUCCESS` or `EXIT_FAILURE` based on the comparison results.
+
+34. `close(fd[1]);`: This line closes the write end of the pipe in the parent process. The parent process only needs the read end of the pipe to read the data written by the child processes.
+
+36. `char buffer[10];`: This line declares a character array `buffer` with a size of 10, which will be used to store data read from the pipe.
+
+37. `ssize_t read_bytes;`: This line declares a variable `read_bytes` of type `ssize_t` that will be used to store the number of bytes read from the pipe.
+
+38. `while ((read_bytes = read(fd[0], buffer, sizeof(buffer))) > 0) { ... }`: This loop reads data from the read end of the pipe using the `read` function. It continues reading until there is no more data to read (`read` returns `0`) or an error occurs. The data read is stored in the `buffer` array, and the number of bytes read is stored in the `read_bytes` variable.
+
+40-45. This block of code checks the content of the `buffer` and increments the respective counter (`nr_films` or `nr_series`) based on the comparison results.
+
+Please note that there are variables `nr_films` and `nr_series` mentioned in the code, which are likely declared earlier in the program.
+
+---------
+const char* pipe_name = "mypipe";
+    struct stat pipe_stat;
+    if (stat(pipe_name, &pipe_stat) == 0) {
+        fprintf(stderr, "Named pipe already exists\n");
+        return 1;
+    }
+
+    if (mkfifo(pipe_name, 0666) == -1) {
+        fprintf(stderr, "Error creating named pipe\n");
+        return 1;
+    }
+
+    int pipe_fd = open(pipe_name, O_RDWR);
+    if (pipe_fd == -1) {
+        fprintf(stderr, "Error opening named pipe for read/write\n");
+        return 1;
+    }
+
+    char line[512];
+    while (fgets(line, sizeof(line), f) != NULL) {
+        pid_t pid = fork();
+        if (pid < 0) {
+            fprintf(stderr, "Error in waitpid\n");
+            exit(EXIT_FAILURE);
+        } else if (pid == 0) {
+            close(STDOUT_FILENO);
+            dup2(pipe_fd, STDOUT_FILENO);
+            close(pipe_fd);
+
+            char type[10];
+            char nume[20];
+            int durata;
+            int an;
+            char tip[20];
+            sscanf(line, "%[^;];%[^;];%d;%d;%[^;]", nume, type, &durata, &an, tip);
+            if (strcmp(type, "film") == 0) {
+                printf("film\n");
+                exit(EXIT_SUCCESS);
+            } else if (strcmp(type, "serial") == 0) {
+                printf("serial\n");
+                exit(EXIT_SUCCESS);
+            } else {
+                printf("other\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    close(pipe_fd);
+
+    int pipe_fd_read = open(pipe_name, O_RDONLY);
+    if (pipe_fd_read == -1) {
+        fprintf(stderr, "Error opening named pipe for reading\n");
+        return 1;
+    }
+
+    char buffer[10];
+    ssize_t read_bytes;
+    while ((read_bytes = read(pipe_fd_read, buffer, sizeof(buffer))) > 0) {
+        if (strncmp(buffer, "film", read_bytes) == 0) {
+            nr_films++;
+        } else if (strncmp(buffer, "serial", read_bytes) == 0) {
+            nr_series++;
+        }
+    }
+
+    fclose(f);
+    printf("%d\n", nr_films);
+    printf("%d\n", nr_series);
+
+    close(pipe_fd_read);
+    unlink(pipe_name);
+--------
+Certainly! Here's an explanation of the code line by line:
+
+1. `const char* pipe_name = "mypipe";`: This line declares a constant character pointer `pipe_name` and assigns it the value `"mypipe"`. It represents the name of the named pipe.
+
+2. `struct stat pipe_stat;`: This line declares a variable `pipe_stat` of type `struct stat` that will be used to store information about the named pipe.
+
+3. `if (stat(pipe_name, &pipe_stat) == 0) { ... }`: This line uses the `stat` function to check if the named pipe already exists. If the function call returns `0`, indicating success, it means that the named pipe already exists. In that case, an error message is printed, and the program returns `1` to indicate an error.
+
+5. `if (mkfifo(pipe_name, 0666) == -1) { ... }`: This line creates a named pipe using the `mkfifo` function. It specifies the `pipe_name` and the file permissions (`0666` corresponds to read and write permissions for all users). If the function call returns `-1`, indicating an error, it means that the named pipe creation failed. In that case, an error message is printed, and the program returns `1` to indicate an error.
+
+7. `int pipe_fd = open(pipe_name, O_RDWR);`: This line opens the named pipe for reading and writing using the `open` function. It assigns the file descriptor for the named pipe to the variable `pipe_fd`. If the `open` function returns `-1`, indicating an error, it means that the opening of the named pipe failed. In that case, an error message is printed, and the program returns `1` to indicate an error.
+
+12. `while (fgets(line, sizeof(line), f) != NULL) { ... }`: This loop reads lines from the file using `fgets` until there are no more lines to read. Each line is stored in the `line` array.
+
+14. `pid_t pid = fork();`: This line creates a new process by forking the current process. The `fork` function returns the process ID of the child process in the parent process and `0` in the child process.
+
+16. `if (pid < 0) { ... }`: This condition checks if the `fork` function failed to create a new process. If the condition is true, an error message is printed, and the child process exits with `EXIT_FAILURE`.
+
+20-44. This block of code runs in the child process. It closes the standard output (`STDOUT_FILENO`), duplicates the file descriptor of the named pipe (`pipe_fd`) to the standard output, and closes the original file descriptor of the named pipe. Then, it parses the values from the `line` string and uses `printf` to write "film", "serial", or "other" to the named pipe based on the comparison results. Finally, it exits the child process with `EXIT_SUCCESS` or `EXIT_FAILURE` based on the comparison results.
+
+46. `close(pipe_fd);`: This line closes the file descriptor of the named pipe in the parent process.
+
+48. `int pipe_fd_read = open(pipe_name, O_RDONLY);`: This line opens the named pipe for reading only using the `open` function. It assigns the file descriptor for the named pipe to the variable `pipe_fd_read`. If the `open` function returns `-1`, indicating an error, it means that the opening of the named pipe failed. In that case, an error message is printed, and the program returns `1` to indicate an error.
+
+50. `char buffer[10];`: This
+
+ line declares a character array `buffer` with a size of 10, which will be used to store data read from the named pipe.
+
+51. `ssize_t read_bytes;`: This line declares a variable `read_bytes` of type `ssize_t` that will be used to store the number of bytes read from the named pipe.
+
+52. `while ((read_bytes = read(pipe_fd_read, buffer, sizeof(buffer))) > 0) { ... }`: This loop reads data from the named pipe using the `read` function. It continues reading until there is no more data to read (`read` returns `0`) or an error occurs. The data read is stored in the `buffer` array, and the number of bytes read is stored in the `read_bytes` variable.
+
+54-57. This block of code checks the content of the `buffer` and increments the respective counter (`nr_films` or `nr_series`) based on the comparison results.
+
+59. `fclose(f);`: This line closes the file that was opened earlier.
+
+61-62. These lines print the values of `nr_films` and `nr_series` respectively.
+
+64. `close(pipe_fd_read);`: This line closes the file descriptor of the named pipe used for reading in the parent process.
+
+65. `unlink(pipe_name);`: This line removes the named pipe from the file system.
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,1144 @@
+Enunt problema 3:
+Se da ca prim parametru un nume de fisier. Pe fiecare linie a acestuia se află, CNP-urile noilor născuți dintr-o maternitate. CNP-ul trebuie sa conțină exact 13 cifre și să nu înceapă cu 0. Validați corespunzător parametrii liniei de comandă și afișați un mesaj corespunzător la standard error, în cazul în care este nevoie.
+Scrieți un program .C care primește ca parametru, fișierul menționat anterior și afișează la ieșirea standard câți băieți și câte fete s-au născut în acea maternitate. Dacă CNP-ul începe cu număr impar, atunci înseamnă că noul născut este băiat, altfel, este fată. Rămâne la alegerea studentului formatul afișării rezultatului.
+Creati cate un proces copil care să proceseze câte o linie din fișier.
+Folositi pipe fara nume pentru a comunica intre procese.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+#define MAX_LINE_LENGTH 14 // Lungimea maximă a unei linii din fișier (CNP-ul + newline)
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <file_name>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Deschidem fișierul pentru citire
+    FILE *input_file = fopen(argv[1], "r");
+    if (input_file == NULL) {
+        perror("Error opening input file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creăm un pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("Error creating pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creăm un proces copil
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) { // Procesul copil
+        close(pipefd[0]); // Închidem capătul de citire al pipe-ului în copil
+
+        char cnp[MAX_LINE_LENGTH];
+        int gender;
+
+        // Citim fiecare linie din fișier, verificăm CNP-ul și trimitem rezultatul în pipe
+        while (fgets(cnp, sizeof(cnp), input_file) != NULL) {
+            if (cnp[0] == '0' || atoi(cnp) == 0 || atoi(cnp) % 2 == 0) {
+                gender = 0; // Fată
+            } else {
+                gender = 1; // Băiat
+            }
+            write(pipefd[1], &gender, sizeof(int));
+        }
+
+        // Închidem fișierul și capătul de scriere al pipe-ului
+        fclose(input_file);
+        close(pipefd[1]);
+        exit(EXIT_SUCCESS);
+    } else { // Procesul părinte
+        close(pipefd[1]); // Închidem capătul de scriere al pipe-ului în părinte
+
+        int boy_count = 0;
+        int girl_count = 0;
+        int gender;
+
+        // Citim rezultatele trimise de copil și le numărăm
+        while (read(pipefd[0], &gender, sizeof(int)) > 0) {
+            if (gender == 0) {
+                girl_count++;
+            } else {
+                boy_count++;
+            }
+        }
+
+        // Afișăm numărul total de băieți și fete
+        printf("Numar total de baieti: %d\n", boy_count);
+        printf("Numar total de fete: %d\n", girl_count);
+
+        // Așteptăm terminarea procesului copil
+        wait(NULL);
+
+        // Închidem capătul de citire al pipe-ului
+        close(pipefd[0]);
+    }
+
+    return 0;
+}
+
+
+
+
+
+
+Enunt problema 4:
+Se dă ca prim parametru un nume de fișier. Pe fiecare linie a acestuia se află numele studenților de la o facultate. Numele poate fi format doar din litere sau spații. Validați corespunzător parametrii liniei de comandă și afișați un mesaj corespunzător la standard error, în cazul în care este nevoie.
+Scrieți un program .C care primește ca parametru, fișierul menționat anterior și numără câte litere mici conține fiecare linie. Rezultatul va fi afișat la ieșirea standard, pe prima linie numărul cerut pentru prima linie din fișier, pe a doua linie, numărul cerut pentru a doua linie din fișier și tot asa.
+Creati cate un proces copil care să proceseze câte o linie din fișier.
+Folositi pipe fara nume pentru a comunica intre procese.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+#define MAX_LINE_LENGTH 1024 // Lungimea maximă a unei linii din fișier
+
+int count_lowercase_letters(const char *line) {
+    int count = 0;
+    for (int i = 0; line[i] != '\0'; i++) {
+        if (line[i] >= 'a' && line[i] <= 'z') {
+            count++;
+        }
+    }
+    return count;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <file_name>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Deschidem fișierul pentru citire
+    FILE *input_file = fopen(argv[1], "r");
+    if (input_file == NULL) {
+        perror("Error opening input file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creăm un pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("Error creating pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creăm un proces copil
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) { // Procesul copil
+        close(pipefd[0]); // Închidem capătul de citire al pipe-ului în copil
+
+        char line[MAX_LINE_LENGTH];
+        int lowercase_count;
+
+        // Citim fiecare linie din fișier, numărăm literele mici și trimitem rezultatul în pipe
+        while (fgets(line, sizeof(line), input_file) != NULL) {
+            lowercase_count = count_lowercase_letters(line);
+            write(pipefd[1], &lowercase_count, sizeof(int));
+        }
+
+        // Închidem fișierul și capătul de scriere al pipe-ului
+        fclose(input_file);
+        close(pipefd[1]);
+        exit(EXIT_SUCCESS);
+    } else { // Procesul părinte
+        close(pipefd[1]); // Închidem capătul de scriere al pipe-ului în părinte
+
+        int lowercase_count;
+        int line_number = 1;
+
+        // Citim rezultatele trimise de copil și le afișăm la ieșirea standard
+        while (read(pipefd[0], &lowercase_count, sizeof(int)) > 0) {
+            printf("Number of lowercase letters on line %d: %d\n", line_number++, lowercase_count);
+        }
+
+        // Așteptăm terminarea procesului copil
+        wait(NULL);
+
+        // Închidem capătul de citire al pipe-ului
+        close(pipefd[0]);
+    }
+
+    return 0;
+}
+
+
+
+
+
+Enunt problema 5 (Valorant):
+Se dă ca prim parametru un nume de fișier ce conține informații despre performanțele jucătorilor din jocul Valorant. Pe fiecare linie a acestuia se găsesc 3 numere, separate prin spațiu, cu semnificația în ordinea următoare: kill-uri, deaths și asisturi.Fiecare linie reprezintă performanța unui jucător. Calculați scorul fiecărui jucător știind că: fiecare kill valorează 3 puncte, fiecare asist valorează 1 punct, iar fiecare death valorează 0 puncte. Afișați la ieșirea standard: pe prima linie scorul pentru jucătorul de pe prima linie din fișier, pe a doua linie scorul pentru al doilea jucător din fișier și tot așa. Validați corespunzător parametrii liniei de comandă și afișați un mesaj corespunzător la standard error, în cazul în care este nevoie.
+Creati cate un proces copil care să proceseze câte o linie din fișier.
+Folositi pipe fara nume pentru a comunica intre procese.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+#define MAX_LINE_LENGTH 1024 // Lungimea maximă a unei linii din fișier
+
+int calculate_score(int kills, int deaths, int assists) {
+    return kills * 3 + assists * 1 + deaths * 0;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <file_name>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Deschidem fișierul pentru citire
+    FILE *input_file = fopen(argv[1], "r");
+    if (input_file == NULL) {
+        perror("Error opening input file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creăm un pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("Error creating pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creăm un proces copil
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) { // Procesul copil
+        close(pipefd[0]); // Închidem capătul de citire al pipe-ului în copil
+
+        int kills, deaths, assists, score;
+
+        // Citim fiecare linie din fișier, calculăm scorul și trimitem scorul în pipe
+        while (fscanf(input_file, "%d %d %d", &kills, &deaths, &assists) == 3) {
+            score = calculate_score(kills, deaths, assists);
+            write(pipefd[1], &score, sizeof(int));
+        }
+
+        // Închidem fișierul și capătul de scriere al pipe-ului
+        fclose(input_file);
+        close(pipefd[1]);
+        exit(EXIT_SUCCESS);
+    } else { // Procesul părinte
+        close(pipefd[1]); // Închidem capătul de scriere al pipe-ului în părinte
+
+        int score;
+        int player_number = 1;
+
+        // Citim scorurile trimise de copil și le afișăm la ieșirea standard
+        while (read(pipefd[0], &score, sizeof(int)) > 0) {
+            printf("Score for player %d: %d\n", player_number++, score);
+        }
+
+        // Așteptăm terminarea procesului copil
+        wait(NULL);
+
+        // Închidem capătul de citire al pipe-ului
+        close(pipefd[0]);
+    }
+
+    return 0;
+}
+
+
+
+6
+Se dă ca prim parametru un nume de fișier ce conține informații despre clasamentul unei ligi de fotbal. Pe fiecare linie a acestuia se găsesc 3 numere, separate prin spațiu, cu semnificația în ordinea următoare: victorii, egaluri și infrangeri. Fiecare linie reprezintă performanțele unei echipe din clasament. Calculați scorul fiecărei echipe știind că: fiecare victorie valorează 3 puncte, fiecare egal valorează 1 punct, iar fiecare înfrângere valorează 0 puncte. Afișați la ieșirea standard: pe prima linie scorul pentru echipa de pe prima linie din fișier, pe a doua linie scorul pentru echipa de pe a doua linie din fișier și tot așa. Validați corespunzător parametrii liniei de comandă și afișați un mesaj corespunzător la standard error, în cazul în care este nevoie.
+Creati cate un proces copil care să proceseze câte o linie din fișier.
+Folositi pipe fara nume pentru a comunica intre procese.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+#define MAX_LINE_LENGTH 1024 // Lungimea maximă a unei linii din fișier
+
+int calculate_score(int wins, int draws, int losses) {
+    return wins * 3 + draws * 1 + losses * 0;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <file_name>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Deschidem fișierul pentru citire
+    FILE *input_file = fopen(argv[1], "r");
+    if (input_file == NULL) {
+        perror("Error opening input file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creăm un pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("Error creating pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creăm un proces copil
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) { // Procesul copil
+        close(pipefd[0]); // Închidem capătul de citire al pipe-ului în copil
+
+        int wins, draws, losses, score;
+
+        // Citim fiecare linie din fișier, calculăm scorul și trimitem scorul în pipe
+        while (fscanf(input_file, "%d %d %d", &wins, &draws, &losses) == 3) {
+            score = calculate_score(wins, draws, losses);
+            write(pipefd[1], &score, sizeof(int));
+        }
+
+        // Închidem fișierul și capătul de scriere al pipe-ului
+        fclose(input_file);
+        close(pipefd[1]);
+        exit(EXIT_SUCCESS);
+    } else { // Procesul părinte
+        close(pipefd[1]); // Închidem capătul de scriere al pipe-ului în părinte
+
+        int score;
+        int team_number = 1;
+
+        // Citim scorurile trimise de copil și le afișăm la ieșirea standard
+        while (read(pipefd[0], &score, sizeof(int)) > 0) {
+            printf("Score for team %d: %d\n", team_number++, score);
+        }
+
+        // Așteptăm terminarea procesului copil
+        wait(NULL);
+
+        // Închidem capătul de citire al pipe-ului
+        close(pipefd[0]);
+    }
+
+    return 0;
+}
+
+
+
+
+Enunt problema 7:
+Se dă ca prim parametru un nume de fișier. Numărați câte cuvinte se află pe fiecare linie. Un cuvânt este separat de spații sau de new line. Rezultatul va fi afișat la ieșirea standard, pe prima linie numărul de cuvinte de pe prima linie din fișier, pe a doua linie numărul de cuvinte de pe a doua linie din fișier și tot așa. Validați corespunzător parametrii liniei de comandă și afișați un mesaj corespunzător la standard error, în cazul în care este nevoie. 
+Creati cate un proces copil care să proceseze câte o linie din fișier.
+Folositi pipe fara nume pentru a comunica intre procese.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+#define MAX_LINE_LENGTH 1024 // Lungimea maximă a unei linii din fișier
+
+int count_words(char *line) {
+    int count = 0;
+    int in_word = 0;
+
+    while (*line) {
+        if (*line == ' ' || *line == '\n') {
+            if (in_word) {
+                count++;
+                in_word = 0;
+            }
+        } else {
+            in_word = 1;
+        }
+        line++;
+    }
+
+    // Verificăm dacă ultimul caracter era parte dintr-un cuvânt
+    if (in_word) {
+        count++;
+    }
+
+    return count;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <file_name>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Deschidem fișierul pentru citire
+    FILE *input_file = fopen(argv[1], "r");
+    if (input_file == NULL) {
+        perror("Error opening input file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creăm un pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("Error creating pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creăm un proces copil
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) { // Procesul copil
+        close(pipefd[0]); // Închidem capătul de citire al pipe-ului în copil
+
+        char line[MAX_LINE_LENGTH];
+        int words_count;
+
+        // Citim fiecare linie din fișier și numărăm cuvintele de pe acea linie
+        while (fgets(line, MAX_LINE_LENGTH, input_file) != NULL) {
+            words_count = count_words(line);
+            // Scriem rezultatul în pipe
+            write(pipefd[1], &words_count, sizeof(int));
+        }
+
+        // Închidem fișierul și capătul de scriere al pipe-ului
+        fclose(input_file);
+        close(pipefd[1]);
+        exit(EXIT_SUCCESS);
+    } else { // Procesul părinte
+        close(pipefd[1]); // Închidem capătul de scriere al pipe-ului în părinte
+
+        int words_count;
+        int line_number = 1;
+
+        // Citim rezultatele trimise de copil și le afișăm la ieșirea standard
+        while (read(pipefd[0], &words_count, sizeof(int)) > 0) {
+            printf("Number of words on line %d: %d\n", line_number++, words_count);
+        }
+
+        // Așteptăm terminarea procesului copil
+        wait(NULL);
+
+        // Închidem capătul de citire al pipe-ului
+        close(pipefd[0]);
+    }
+
+    return 0;
+}
+
+
+
+
+
+Enunt problema 9:
+Sa dă ca parametru un nume de fișier. Să se înlocuiască toate vocalele litere mici din fișier cu literele mari corespunzătoare. Validați corespunzător parametrii liniei de comandă și afișați un mesaj corespunzător la standard error, în cazul în care este nevoie.
+Creați câte un proces copil care să proceseze câte o linie din fișier.
+Folositi pipe fara nume pentru a comunica intre procese.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <ctype.h>
+
+#define MAX_LINE_LENGTH 1024 // Lungimea maximă a unei linii din fișier
+
+void process_line(char *line) {
+    while (*line) {
+        if (islower(*line) && strchr("aeiou", *line)) {
+            *line = toupper(*line); // Convertim litera mică în literă mare
+        }
+        line++;
+    }
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <file_name>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Deschidere fișier pentru citire
+    FILE *input_file = fopen(argv[1], "r");
+    if (input_file == NULL) {
+        perror("Error opening input file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Deschidere fișier pentru scriere
+    FILE *output_file = fopen("output.txt", "w");
+    if (output_file == NULL) {
+        perror("Error opening output file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creare pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("Error creating pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creare proces copil
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) { // Procesul copil
+        close(pipefd[0]); // Închideți capătul de citire al pipe-ului în copil
+
+        char line[MAX_LINE_LENGTH];
+
+        // Citirea fiecărei linii din fișier și procesarea lor
+        while (fgets(line, MAX_LINE_LENGTH, input_file) != NULL) {
+            process_line(line); // Procesează linia pentru a înlocui vocalele cu litere mari
+            fputs(line, output_file); // Scrie linia modificată în fișierul de ieșire
+        }
+
+        // Închideți fișierele și capătul de scriere al pipe-ului
+        fclose(input_file);
+        fclose(output_file);
+        close(pipefd[1]);
+        exit(EXIT_SUCCESS);
+    } else { // Procesul părinte
+        close(pipefd[1]); // Închideți capătul de scriere al pipe-ului în părinte
+
+        char line[MAX_LINE_LENGTH];
+
+        // Citirea rezultatelor trimise de copil și scrierea lor în fișierul de ieșire
+        while (fgets(line, MAX_LINE_LENGTH, input_file) != NULL) {
+            fputs(line, output_file);
+        }
+
+        // Așteptați terminarea procesului copil
+        wait(NULL);
+
+        // Închideți fișierele și capătul de citire al pipe-ului
+        fclose(input_file);
+        fclose(output_file);
+        close(pipefd[0]);
+    }
+
+    return 0;
+}
+
+
+
+
+
+Enunt problema 10:
+Sa dă ca parametru un fișier html care conține text și etichete specifice limbajului html. Prin etichetă înțelegem o serie de caractere aflate între caracterul mai mic “<” și caracterul mai mare “>”, inclusiv acestea. Putem considera că o etichetă începe și se termină pe aceeași linie. Validați corespunzător parametrii liniei de comandă și afișați un mesaj corespunzător la standard error, în cazul în care este nevoie.
+Scrieți un program C care numără câte etichete se află în fișier. Rezultatul va fi afișat la ieșirea standard.
+Creați câte un proces copil care să proceseze câte o linie din fișier.
+Folositi pipe fara nume pentru a comunica intre procese.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <string.h>
+
+#define MAX_LINE_LENGTH 1024 // Lungimea maximă a unei linii din fișier
+
+int count_tags(char *line) {
+    int count = 0;
+    char *ptr = line;
+
+    // Parcurgem linia și numărăm etichetele
+    while ((ptr = strchr(ptr, '<')) != NULL) {
+        count++;
+        ptr++;
+    }
+
+    return count;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <file_name>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Deschidere fișier pentru citire
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creare pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("Error creating pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creare proces copil
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) { // Procesul copil
+        close(pipefd[0]); // Închideți capătul de citire al pipe-ului în copil
+
+        char line[MAX_LINE_LENGTH];
+        int tags_count = 0;
+
+        // Citirea fiecărei linii din fișier și numărarea etichetelor
+        while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
+            tags_count += count_tags(line);
+        }
+
+        // Trimiteți rezultatul către procesul părinte prin pipe
+        write(pipefd[1], &tags_count, sizeof(int));
+
+        // Închideți fișierul și capătul de scriere al pipe-ului
+        fclose(file);
+        close(pipefd[1]);
+        exit(EXIT_SUCCESS);
+    } else { // Procesul părinte
+        close(pipefd[1]); // Închideți capătul de scriere al pipe-ului în părinte
+
+        int total_tags_count = 0;
+        int tags_count;
+
+        // Citirea rezultatelor trimise de copii și suma lor
+        while (read(pipefd[0], &tags_count, sizeof(int)) > 0) {
+            total_tags_count += tags_count;
+        }
+
+        // Afișarea numărului total de etichete
+        printf("Total number of tags: %d\n", total_tags_count);
+
+        // Așteptați terminarea procesului copil
+        wait(NULL);
+
+        // Închideți capătul de citire al pipe-ului
+        close(pipefd[0]);
+    }
+
+    return 0;
+}
+
+
+
+Enunt problema 11:
+Se dă ca prim parametru un nume de fișier, iar în al doilea parametru un număr natural x. Afișați la ieșirea standard liniile a căror lungime este mai mare decât numărul x dat. Validați corespunzător parametrii liniei de comandă și afișați un mesaj corespunzător la standard error, în cazul în care este nevoie.
+Creați câte un proces copil care să proceseze câte o linie din fișier.
+Folositi pipe fara nume pentru a comunica intre procese.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <string.h>
+
+#define MAX_LINE_LENGTH 1024 // Lungimea maximă a unei linii din fișier
+#define MAX_NAME_LENGTH 256 // Lungimea maximă a numelui studentului
+
+int calculate_control_digit(int number) {
+    int sum = 0;
+    while (number != 0) {
+        sum += number % 10;
+        number /= 10;
+    }
+    return sum % 10;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <file_name>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Deschideți fișierul specificat în primul argument pentru citire
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creare pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("Error creating pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creare proces copil
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) { // Procesul copil
+        close(pipefd[0]); // Închideți capătul de citire al pipe-ului în copil
+
+        char line[MAX_LINE_LENGTH];
+
+        // Citirea fiecărei linii din fișier
+        while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
+            char name[MAX_NAME_LENGTH];
+            int series, id;
+
+            // Parsarea numelui, seriei și numărului de buletin din linie
+            sscanf(line, "%[^,], %2s, %d", name, (char *)&series, &id);
+
+            // Calcularea cifrei de control pentru numărul de buletin
+            int control_digit = calculate_control_digit(id);
+
+            // Scrierea rezultatului în pipe către procesul părinte
+            dprintf(pipefd[1], "%s: %d\n", name, control_digit);
+        }
+
+        // Închideți fișierul și capătul de scriere al pipe-ului
+        fclose(file);
+        close(pipefd[1]);
+        exit(EXIT_SUCCESS);
+    } else { // Procesul părinte
+        close(pipefd[1]); // Închideți capătul de scriere al pipe-ului în părinte
+
+        char result[MAX_LINE_LENGTH];
+
+        // Citirea rezultatelor trimise de la copil și afișarea lor
+        while (read(pipefd[0], result, MAX_LINE_LENGTH) > 0) {
+            printf("%s", result);
+        }
+
+        // Așteptați terminarea procesului copil
+        wait(NULL);
+
+        // Închideți capătul de citire al pipe-ului
+        close(pipefd[0]);
+    }
+
+    return 0;
+}
+
+ 
+
+
+
+
+
+
+Enunt problema 13:
+Se dă ca prim parametru un nume de fișier. Pe fiecare linie a acestuia se află cuvinte separate prin spații. Afișați liniile care încep și se termină cu același cuvânt. Validați corespunzător parametrii liniei de comandă și afișați un mesaj corespunzător la standard error, în cazul în care este nevoie. Rezultatul va fi afișat la ieșirea standard.
+Creați câte un proces copil care să proceseze câte o linie din fișier.
+Folositi pipe fara nume pentru a comunica intre procese.
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <string.h>
+
+#define MAX_LINE_LENGTH 1024 // Lungimea maximă a unei linii din fișier
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <file_name>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Deschideți fișierul specificat în primul argument pentru citire
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creare pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("Error creating pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creare proces copil
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) { // Procesul copil
+        close(pipefd[0]); // Închideți capătul de citire al pipe-ului în copil
+
+        char line[MAX_LINE_LENGTH];
+
+        // Citeste fiecare linie din fișier
+        while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
+            // Eliminați caracterul '\n' de la sfârșitul liniei
+            char *pos;
+            if ((pos = strchr(line, '\n')) != NULL) {
+                *pos = '\0';
+            }
+
+            // Tokenizați linia în cuvinte
+            char *token = strtok(line, " ");
+            char *last_word = NULL;
+
+            // Găsiți ultimul cuvânt din linie
+            while (token != NULL) {
+                last_word = token;
+                token = strtok(NULL, " ");
+            }
+
+            // Verificați dacă primul și ultimul cuvânt sunt aceleași
+            if (last_word != NULL && strcmp(line, last_word) == 0) {
+                // Trimiteți linia care începe și se termină cu același cuvânt prin pipe către procesul părinte
+                write(pipefd[1], line, strlen(line) + 1);
+            }
+        }
+
+        // Închideți fișierul și capătul de scriere al pipe-ului
+        fclose(file);
+        close(pipefd[1]);
+        exit(EXIT_SUCCESS);
+    } else { // Procesul părinte
+        close(pipefd[1]); // Închideți capătul de scriere al pipe-ului în părinte
+
+        char line[MAX_LINE_LENGTH];
+
+        // Citirea liniilor trimise de la copil și afișarea lor
+        while (read(pipefd[0], line, MAX_LINE_LENGTH) > 0) {
+            printf("%s\n", line);
+        }
+
+        // Așteptați terminarea procesului copil
+        wait(NULL);
+
+        // Închideți capătul de citire al pipe-ului
+        close(pipefd[0]);
+    }
+
+    return 0;
+}
+
+
+
+Enunt problema 14:
+Se dă ca prim parametru un nume de fișier. Să se calculeze suma numerelor de pe liniile care încep cu litera “s” și produsul numerelor de pe liniile care încep cu litera “p”. Dacă linia începe cu alt caracter, atunci nu va fi afișat nimic. Validați corespunzător parametrii liniei de comandă și afișați un mesaj corespunzător la standard error, în cazul în care este nevoie. Considerăm ca numerele sunt delimitate de spații. Rezultatul va fi afișat la ieșirea standard. Pe prima linie rezultatul corespunzător primei linii din fișier, pe a doua linie rezultatul corespunzător celei de-a doua linii din fișier și așa mai departe.
+Creați câte un proces copil care să proceseze câte o linie din fișier.
+Folositi pipe fara nume pentru a comunica intre procese.
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <string.h>
+
+#define MAX_LINE_LENGTH 1024 // Lungimea maximă a unei linii din fișier
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <file_name>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Deschideți fișierul specificat în primul argument pentru citire
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creare pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("Error creating pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creare proces copil
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) { // Procesul copil
+        close(pipefd[0]); // Închideți capătul de citire al pipe-ului în copil
+
+        char line[MAX_LINE_LENGTH];
+        long long sum = 0, product = 1;
+
+        // Citeste fiecare linie din fișier
+        while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
+            if (line[0] == 's') { // Dacă linia începe cu "s", calculați suma numerelor
+                char *token = strtok(line + 1, " \n"); // Ignorați primul caracter și tokenizați restul liniei
+                while (token != NULL) {
+                    sum += atoi(token); // Adăugați numărul la sumă
+                    token = strtok(NULL, " \n");
+                }
+            } else if (line[0] == 'p') { // Dacă linia începe cu "p", calculați produsul numerelor
+                char *token = strtok(line + 1, " \n"); // Ignorați primul caracter și tokenizați restul liniei
+                while (token != NULL) {
+                    product *= atoi(token); // Înmulțiți numărul cu produsul curent
+                    token = strtok(NULL, " \n");
+                }
+            }
+        }
+
+        // Trimiteți suma și produsul prin pipe către procesul părinte
+        write(pipefd[1], &sum, sizeof(long long));
+        write(pipefd[1], &product, sizeof(long long));
+
+        // Închideți fișierul și capătul de scriere al pipe-ului
+        fclose(file);
+        close(pipefd[1]);
+        exit(EXIT_SUCCESS);
+    } else { // Procesul părinte
+        close(pipefd[1]); // Închideți capătul de scriere al pipe-ului în părinte
+
+        long long sum, product;
+
+        // Citirea sumei și produsului de la copil
+        read(pipefd[0], &sum, sizeof(long long));
+        read(pipefd[0], &product, sizeof(long long));
+
+        // Afișarea sumei și produsului
+        printf("Sum of numbers starting with 's': %lld\n", sum);
+        printf("Product of numbers starting with 'p': %lld\n", product);
+
+        // Așteptați terminarea procesului copil
+        wait(NULL);
+
+        // Închideți capătul de citire al pipe-ului
+        close(pipefd[0]);
+    }
+
+    return 0;
+}
+
+
+
+
+
+Enunt problema 16:
+Se dă ca prim parametru un nume de fișier. Pe fiecare linie a acestuia se află cuvinte separate prin spații. Afișați la ieșirea standard numărul liniilor care conțin același cuvânt în poziții consecutive. Validați corespunzător parametrii liniei de comandă și afișați un mesaj corespunzător la standard error, în cazul în care este nevoie.
+Creați câte un proces copil care să proceseze câte o linie din fișier. Afișarea trebuie realizată din procesul părinte. Folositi pipe fara nume pentru a comunica intre procese.
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <string.h>
+
+#define MAX_LINE_LENGTH 1024 // Lungimea maximă a unei linii din fișier
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <file_name>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Deschideți fișierul specificat în primul argument pentru citire
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creare pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("Error creating pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creare proces copil
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) { // Procesul copil
+        close(pipefd[0]); // Inchideți capătul de citire al pipe-ului în copil
+
+        char line[MAX_LINE_LENGTH];
+        char prev_word[MAX_LINE_LENGTH] = ""; // Cuvântul de pe linia anterioară
+
+        int consecutive_count = 0;
+
+        // Citeste fiecare linie din fișier
+        while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
+            char *token = strtok(line, " \n"); // Tokenizează linia în cuvinte
+
+            // Verificați dacă cuvântul curent este același cu cel de pe linia anterioară
+            if (token != NULL && strcmp(token, prev_word) == 0) {
+                consecutive_count++; // Incrementați numărul de liniile consecutive cu același cuvânt
+            } else {
+                consecutive_count = 0; // Resetați numărul de liniile consecutive pentru un nou cuvânt
+            }
+
+            strcpy(prev_word, token); // Actualizați cuvântul de pe linia anterioară
+
+            // Trimiteți numărul de liniile consecutive prin pipe către procesul părinte
+            write(pipefd[1], &consecutive_count, sizeof(int));
+        }
+
+        // Închideți fișierul și capătul de scriere al pipe-ului
+        fclose(file);
+        close(pipefd[1]);
+        exit(EXIT_SUCCESS);
+    } else { // Procesul părinte
+        close(pipefd[1]); // Închideți capătul de scriere al pipe-ului în părinte
+
+        int total_count = 0;
+        int count;
+
+        // Citirea rezultatelor de la fiecare copil și adăugarea lor la total_count
+        while (read(pipefd[0], &count, sizeof(int)) > 0) {
+            total_count += count;
+        }
+
+        // Afișați numărul total de liniile consecutive cu același cuvânt
+        printf("Total number of consecutive lines with the same word: %d\n", total_count);
+
+        // Așteptați terminarea procesului copil
+        wait(NULL);
+
+        // Închideți capătul de citire al pipe-ului
+        close(pipefd[0]);
+    }
+
+    return 0;
+}
+
+
+
+
+
+
+Enunt problema 17:
+Se dă ca prim parametru un nume de fișier. Pe fiecare linie a acestuia se află cuvinte separate prin spații. În al doilea parametru este dat un cuvânt format doar din caractere alfanumerice (litere sau cifre). Validați corespunzător parametrii liniei de comandă și afișați un mesaj corespunzător la standard error, în cazul în care este nevoie.
+Pentru fiecare linie calculați de câte ori apare cuvântul din al doilea parametru pe acea linie. Rezultatul va fi afișat la ieșirea standard.
+Creați câte un proces copil care să proceseze câte o linie din fișier.
+Afișarea trebuie realizată din procesul părinte. Folositi pipe fara nume pentru a comunica intre procese.
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+
+#define MAX_LINE_LENGTH 1024 // Lungimea maximă a unei linii din fișier
+
+int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s <file_name> <word>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Deschideți fișierul specificat în primul argument pentru citire
+    FILE *file = fopen(argv[1], "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creare pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("Error creating pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    // Creare proces copil
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Error forking");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) { // Procesul copil
+        close(pipefd[0]); // Inchideți capătul de citire al pipe-ului în copil
+
+        char line[MAX_LINE_LENGTH];
+        char *word = argv[2]; // Cuvântul dat ca al doilea argument
+
+        // Citeste fiecare linie din fișier
+        while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
+            int count = 0;
+            char *token = strtok(line, " \n"); // Tokenizează linia în cuvinte
+
+            // Verificați fiecare cuvânt din linie pentru a vedea dacă se potrivește cu cuvântul dat
+            while (token != NULL) {
+                if (strcmp(token, word) == 0) {
+                    count++; // Incrementați numărul de apariții
+                }
+                token = strtok(NULL, " \n");
+            }
+
+            // Trimiteți numărul de apariții către procesul părinte prin pipe
+            write(pipefd[1], &count, sizeof(int));
+        }
+
+        // Închideți fișierul și capătul de scriere al pipe-ului
+        fclose(file);
+        close(pipefd[1]);
+        exit(EXIT_SUCCESS);
+    } else { // Procesul părinte
+        close(pipefd[1]); // Inchideți capătul de scriere al pipe-ului în părinte
+
+        int total_count = 0;
+        int count;
+
+        // Citirea rezultatelor de la fiecare copil și adăugarea lor la total_count
+        while (read(pipefd[0], &count, sizeof(int)) > 0) {
+            total_count += count;
+        }
+
+        // Afișați rezultatul total
+        printf("Total occurrences of '%s' in the file: %d\n", argv[2], total_count);
+
+        // Așteptați terminarea procesului copil
+        wait(NULL);
+
+        // Închideți capătul de citire al pipe-ului
+        close(pipefd[0]);
+    }
+
+    return 0;
+}
+
