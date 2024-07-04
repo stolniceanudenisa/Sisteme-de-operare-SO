@@ -1,0 +1,30 @@
+#include<stdio.h>
+#include<string.h>
+#include<unistd.h>
+#include<sys/stat.h>
+#include<fcntl.h>
+#include<sys/types.h>
+
+int main(){
+        int myfifo1,myfifo2;
+        char buf[80],dir[80];
+
+        printf("Dati numele directorului:");
+        fgets(dir, sizeof(dir), stdin);
+
+        //crearea fisierului fifo ( numele path-ului , drepturile de acces ale fisierului FIFO)
+        mkfifo("myfifo1",0666);
+        //deschiderea fisierlui myfifo1 pentru scriere
+        myfifo1=open("myfifo1", O_WRONLY);
+
+        write(myfifo1, dir, sizeof(dir));
+        close(myfifo1);
+
+        //deschiderea fisierului myfifo2 pentru citire
+        myfifo2=open("myfifo2", O_RDONLY);
+        read(myfifo2, buf,80);
+
+        printf("Fisierele de tip text: %s", buf);
+        close(myfifo2);
+        return 0;
+}

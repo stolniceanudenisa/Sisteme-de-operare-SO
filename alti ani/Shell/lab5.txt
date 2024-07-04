@@ -1,0 +1,17 @@
+Să se afişeze numele tuturor fişierelor din linia de comandă care conţin propoziţii în care se repeta un cuvânt mai mult sau egal de două ori.
+Se va afişa deasemenea pentru fiecare asemenea caz numărul liniei şi cuvântul implicat.(prima sa apariţie în propoziţia respectivă)
+
+
+for fisier in $*
+do
+awk '{
+for(i=1;i<=NF-1;i++)
+	{nrCuvRep=0
+	{for(j=i+1;j<=NF;j++)
+		{if($i==$j)
+		nrCuvRep=$((c+=1))}}
+		if(nrCuvRep>=2)
+		{print FILENAME,":",NR,":",$i}
+	}
+}' $fisier
+done

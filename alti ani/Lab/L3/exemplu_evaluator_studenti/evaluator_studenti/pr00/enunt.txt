@@ -1,0 +1,3 @@
+Sa afiseze numele fisierelor date ca parametri care contin un numar de linii mai mare decat 2.
+Rezultatul va fi afisat la iesirea standard.
+

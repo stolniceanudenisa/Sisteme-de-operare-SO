@@ -1,0 +1,42 @@
+if test `TEST 5 -GT 4`
+-le
+-ne
+-gt
+
+var=$1
+echo $var
+if [ 5 -gt 4 ]; then
+        echo "ceva"
+fi
+
+if [ $1  -gt 4 ]; then
+        echo "$1 mai mare de 4"
+else
+        echo "$1 nu mai mare decat 4"
+fi
+
+
+# !/bin/bash
+for i in $*
+do
+        echo $i
+done
+
+
+fisiere=`ls`
+for i in $fisiere
+do
+        echo $i
+done
+
+readlink -f - path ul absolut al lui work dir
+cat /dev/null > "$summary_result_path"
+IFS_ORIG=$IFS -> ///separator spatiu
+IFS=$'\n' -> se modifica separatorul in BACKSLASH
+
+
+        var=` wc -l file | cut -d ' ' -f 1
+
+        var=` wc -l file | cut -d ' ' -f 1
+
+ wc -l enunt.txt | cut -d ' ' -f 1

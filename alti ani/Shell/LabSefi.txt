@@ -1,0 +1,138 @@
+#!/bin/bash
+a=`diff $1 $2 |grep "^[<>].*$"`
+c=`echo "$a"|wc -l`
+if [ $c -lt 5 ];then
+	echo " nu sunt 5 linii diferite"
+else
+	b=`echo "$a"|head -n 5`
+	echo "liniile diferite"
+	echo "$b"
+fi
+Se va srie un script shell care compară conţinutul a doua fişiere text şi va tipări primele 5 linii diferite
+
+#!/bin/bash
+file=$1
+directory=$2
+mkdir $directory
+cat $file | while read line; do
+	cd $directory
+	for i in {0..9};do
+		var=${line:0:1}
+		if [ "$var" = "$i" ]
+			then 
+				if [ -e $i ]
+				then
+					echo "$line" >> "$i"
+				else
+					echo "$line" > "$i"
+				fi
+		fi
+	done
+	
+	for i in {10..26};do
+		var2=${line:0:2}
+		if [ "$var2" = "$i" ]
+			then
+				if [ -e $i ]
+				then
+					echo "$line" >> "$i"
+				else
+					echo "$line" > "$i"
+				fi
+		fi
+	done
+cd ..
+done
+
+cd $directory
+echo $2
+for i in {0..26};do
+	echo Fisierul "$i" din dictionarul $2 contine :
+	cat "$i"
+done
+Lucaci Stefania
+Lucaci
+Sa se scrie un program care primeste in linia de comanda ca si parametrii un numar si numele unui fisier. Programul va sterge din fisier aparitiile pare ale numarului.
+#toate vocalele litere mici din fisierele date se inlocuiesc cu litere mari coresp 
+#si invers
+for fis in $*
+do
+sed y/aeiouAEIOU/AEIOUaeiou/ $fis
+done
+Să se înlocuiască toate vocalele litere mici din fişierele date ca parametri cu litere mari corespunzatoare şi viceversa.
+Lucaci Stefania
+Lucaci
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <wait.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+
+
+int main(int argc , int *argv[]){
+
+int coef[20],a,v;
+int n,i,pid=0,j,created=0,status;
+printf("dati gradul polinomului: ");
+scanf("%d",&n);
+printf("Dati coeficientii polinomului: ");
+
+for(i=0;i<=n;i++)
+   {
+        scanf("%d",&coef[i]);
+        printf("coeficientul termenului x^ %d ",i);
+        printf("este %d \n " , coef[i]);
+   }
+   
+printf("Dati punctul in care se calculeaza: ");
+scanf("%d",&a);
+
+v=0;   
+   //schema horner
+for(i=n;i>=0;i--) //n+1 procese pt fiecare paranteza
+ { 
+if(pid==0)
+ {
+      pid=fork();//cream copil
+      created=0;
+      
+      if(pid<0)
+      {
+        perror("Eroare la creare proces fiu\n");
+        exit(0);
+      }
+      
+      if(pid==0)//suntem in copil
+      {
+         
+           v=v*a+coef[i];
+
+           if(i==0)
+           {
+             printf("valoarea polinomului este v= %d\n",v);
+                       
+           }   
+       }
+   
+    else
+    {
+     if(created==0)
+     {
+       created=1;
+       wait( & status);
+     }
+    
+     exit(0);
+    }
+}
+else
+ exit(0);
+}
+return 0;
+}
+Lucaci Stefania
+Lucaci
+Se dă un polinom A=(a0, a1, ...,an). Să se calculeze valoarea polinomului A într-un punct x, folosind schema lui Horner şi mai multe procese. De exemplu: a0+a1*x+a2*x2 se poate calcula astfel:
+last|grep -w $1|grep -w "$2 $3"
+Pentru anumiţi utilizatori daţi linia de comandă se cere să se afişeze dacă au lucrat la o anumită dată sau nu.

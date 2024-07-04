@@ -1,0 +1,35 @@
+
+#!/bin/bash
+
+#Determina toate fisierele din directorul curent si subdirectoarele acestuia
+
+echo Directories
+
+for item in *
+do
+        if [[ -d $item ]]
+           then
+                echo $item
+        fi
+done
+
+
+echo Files
+
+for item in *
+do
+        if [[ -f $item ]]
+           then
+                echo $item
+        fi
+done
+
+echo Others
+
+for item in *
+do
+        if [[ -f $item ]]
+           then
+               find . -perm -o=w -ls
+        fi
+done 

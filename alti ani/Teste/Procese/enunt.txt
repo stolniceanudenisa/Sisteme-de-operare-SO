@@ -1,0 +1,16 @@
+1. Sa se implementeze doua procese care comunica prin FIFO si nu sunt rude. Primul proces ii scrie in FIFO un numar.
+Al doilea proces adauga un numar aleator ( functia rand ) intre 1 si 10  la numarul primit si verifica daca suma este un numar par.
+Daca da atunci afiseaza ca a castigat, trimite -1 celuilalt proces si se opresc ambele procese.
+In caz contrar ii trimite primului proces numarul obtinut si continua circular aceeasi actiune in ambele procese.
+-1 este conditia de oprire: procesul care primeste -1 doar se termina si nu mai trimite nimic celuilalt
+Toate operatiunile se afiseaza pe ecran impreuna cu un identificator pentru proces.
+
+ex. P1 -> 5 a P2
+  P2: 5 + 6(aleator) = 11 (nu e par)
+        P2 -> 11 la P1
+        P1: 11 + 2 = 13 (nu e par)
+        P1 -> 13 la P2
+        P2: 13 + 3 = 16 (par)
+        P2: "I won"
+        P2 ->-1 la P1
+

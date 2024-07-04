@@ -1,0 +1,10 @@
+#!/bin/bash
+text=$1
+for i in "$@"
+do	
+	echo "Fisierul inainte:"	
+	sed -n p $i
+	echo " "
+	echo "Fisierul dupa stergere:"
+	sed "/$1/d" $i
+done

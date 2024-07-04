@@ -1,0 +1,54 @@
+putty
+v m - VMWare Virtual Box
+WSL - ubuntu
+stick
+
+
+commands
+cd ~ - schimbam directorul pe care vrem  sa lucram
+cd / - fisierul root
+pwd - print working directory
+ls - directoarele directoarele
+ls root - fisierele de peste tot
+ls -l - listeaza folderele cu toate informatiile
+- - fisier
+d - director
+touch name - creeaza un fisier name
+man touch - folosim manual pt instructiune
+mkdir name- creeaza un director name
+echo ceva - printeaza ceva pe ecran
+echo ceva > doc322 - printeaza in fisier ceva
+ls -l doc322
+cat doc322 - continutul fisierului
+nano - editare - ctrl x - exit
+	       - ctrl o - save la fisier
+citire standard
+iesire standard -> redirectare standard
+>> - append la fisier
+> redirectare modifica 
+
+x- execute 
+r- read
+w- write
+grupe - 3 - primul - owner
+	    al doilea - grupul din care face parte
+	    al treilea - others
+
+utilitar chmod 
+chmod - dat / luat drepturi - 0 / 444 
+
+chmod 0 
+chmod 777 doc322
+
+touch abc/t/a abc/t/b
+
+
+0 -> ---
+1 -> --x
+2 -> _w_
+3 -> -wx
+4 -> r-x
+5 -> rw-
+7 -> rwx
+
+mkdir zz; touch zz/x

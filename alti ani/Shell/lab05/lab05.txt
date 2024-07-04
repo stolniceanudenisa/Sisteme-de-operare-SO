@@ -1,0 +1,23 @@
+AWK
+functioneaza pe baza de scenarii
+conditie {actiuni}
+parcurge linie cu linie si verifica validatea scenariului
+procesand tot la nivel de linie
+
+
+awk '{print $0}' fulga.txt - fiecare linie
+
+awk '{print $1}' fulga.txt - primul cuvant din fiecare linie
+
+awk -F',' '{print $1}' fulga.txt - schimbam separatorul in virgula
+
+FNR - renumeroteaza liniile
+NR - liniile procesate
+
+ awk  '/^a/ {print $1}' fulga.txt - primul cuvant incepe cu a
+ awk -f file.awk fulga.txt - asa rulam
+
+
+#!/bin/bash
+echo '{for(i=1;i<NF;i++) if($i==$(i+1)) print NR, $i}' > filee.awk
+awk -f filee.awk $1

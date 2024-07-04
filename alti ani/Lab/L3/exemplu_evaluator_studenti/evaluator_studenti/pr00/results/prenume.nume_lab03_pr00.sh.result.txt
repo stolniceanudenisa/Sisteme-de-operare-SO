@@ -1,0 +1,3 @@
+prenume.nume_lab03_pr00.sh
+test1:1
+test2:1

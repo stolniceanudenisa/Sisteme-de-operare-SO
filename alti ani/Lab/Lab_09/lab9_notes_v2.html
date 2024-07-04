@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<!-- saved from url=(0062)http://www.cs.ubbcluj.ro/~sanda/teaching/subject/SO1/lab/?no=9 -->
+<html lang="en" dir="ltr" xmlns:mso="urn:schemas-microsoft-com:office:office" xmlns:msdt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <title>lab</title>
+    <link rel="stylesheet" href="lab9_notes_v2_files/bootstrap.min.css">
+  
+<!--[if gte mso 9]><xml>
+<mso:CustomDocumentProperties>
+<mso:MediaServiceImageTags msdt:dt="string"></mso:MediaServiceImageTags>
+<mso:lcf76f155ced4ddcb4097134ff3c332f msdt:dt="string"></mso:lcf76f155ced4ddcb4097134ff3c332f>
+<mso:TaxCatchAll msdt:dt="string"></mso:TaxCatchAll>
+</mso:CustomDocumentProperties>
+</xml><![endif]-->
+</head>
+  <body>
+    <div class="container">
+              <h1>Sisteme de operare - lab9</h1>
+        <h3>Procese Unix</h3>
+<h5>Aspecte teoretice</h5>
+<p>
+	Fiecare proces are un identificator de proces unic, un număr întreg pozitiv. Acesta e denumit pe scurt pid (Process IDentifier).
+</p>
+<p>
+	<b>Procese UNIX speciale:</b>
+	</p><ul>
+		<li>
+			procesul cu pid 0 este planificatorul de procese, numit <b><i>swapper</i></b>. Acest proces face parte din nucleu și este considerat un proces sistem.
+		</li>
+		<li>
+			procesul cu pid 1 este procesul <b><i>init</i></b>, invocat de nucleu la sfârșitul procedurii de încărcare a sistemului. Fișierul program pentru acest proces era <em>/etc/init</em> în versiunile vechi și <em>/sbin/init</em> în versiunile noi. Procesul <em>init</em> citește fișierele de inițializare dependente de sistem (fișiserele de resurse <em>/etc/rc*</em>) și aduce sistemul într-o stare stabilă (de exemplu multiuser). Procesul <em>init</em>  este un proces utilizator care se execută cu drepturi de superuser.
+		</li>
+	</ul>
+<p></p>
+
+<h5>Crearea unui proces</h5>
+<p>Crearea unui proces se realizează prin apelul sistem <em>fork</em>, apel care are sintaxa:</p>
+<br><br>
+
+<pre class="code">#include <sys types.h="">
+#include <unistd.h>
+pid_t fork( void);
+</unistd.h></sys></pre>
+
+<p>
+	Procesul care apelează funcția <em>fork</em> se numește <b><i>proces părinte</i></b>, procesul nou creat fiind <b><i>procesul fiu</i></b>.
+</p>
+<p>
+	Apelul returnează 0 în procesul fiu, PID-ul fiului  procesul tata și -1 în caz de eroare (cazul de eroare poate apare dacă s-a atins limita maximă de procese pe care le poate lansa un utilizator sau dacă s-a atins limita maximă de procese ce se pot executa simultan  sistem).
+</p>
+
+<h5>Terminarea unui proces</h5>
+
+<p>
+	Procesul fiu semnalează terminarea sa tatălui aflat  așteptare prin intermediul apelului sistem <em>exit</em> sau <em>_exit</em>. Apelul <em>exit</em> transmite prin parametrul său un număr care semnalează tatălui o terminare normală sau cu eroare. Prin convenție, un cod de stare 0 semnifică terminarea normală a procesului, iar un cod diferit de zero indică apariția unei erori.
+</p>
+<p>Sintaxa apelurilor este:</p>
+<br><br>
+
+<pre class="code">void exit( int status);
+void _exit(int status);
+</pre>
+
+<p>
+	Apelul <em>exit</em> termină procesul care-l execută cu un cod de stare egal cu octetul mai puțin semnificativ al cuvântului de stare, <em>status</em>, și închide toate fișierele deschise de acesta. După aceea, procesului tată  este transmis semnalul <em>SIGCHLD</em>.
+</p>
+<p>Pentru procesele aflate într-o relație părinte-fiu la un apel <em>exit</em> sunt esențiale trei cazuri:</p>
+
+<ul>
+	<li>procesul părinte se termină înaintea procesului fiu;</li>
+	<li>procesul fiu se termină înaintea procesului părinte;</li>
+	<li>procesul fiu, moștenit de procesul <em>init</em> se termină.</li>
+</ul>
+
+<p>
+	Procesul <em>init</em> devine părintele oricărui proces pentru care procesul părinte s-a terminat. Cand un proces se termină, nucleul parcurge toate procesele active pentru a vedea dacă printre ele există un proces care are ca părinte procesul terminat. Dacă există un astfel de proces, pid-ul procesului părinte devine 1 (pid-ul procesului <em>init</em>). Nucleul garantează astfel că fiecare proces are un părinte.
+</p>
+<p>
+	Dacă procesul fiu se termină înaintea procesului părinte, nucleul trebuie să păstreze anumite informații ( pid, starea de terminare, timp de utilizare CPU) asupra modului care fiul s-a terminat.
+</p>
+<p>
+	Aceste informații sunt accesibile părintelui prin apelul <em>wait</em> sau <em>waitpid</em> (despre care vom vorbi în secțiunea următoare). În terminologia Unix un proces care s-a terminat și pentru care procesul părinte nu a executat <em>wait</em> se numește <b><i>zombie</i></b>. În această stare, procesul nu are resurse alocate, ci doar intrarea sa în tabela proceselor. Nucleul poate descărca toată memoria folosită de proces și închide fișierele deschise. Un proces zombie se poate observa prin comanda Unix <em>ps</em> care afișează la starea procesului litera 'Z'.
+</p>
+<p>
+	Dacă un proces care are ca părinte procesul  <em>init</em> se termin acesta nu devine zombie deoarece, procesul  <em>init</em> apelează una dintre funcțiile wait pentru a analiza starea în care procesul a fost terminat. Prin această comportare procesul <em>init</em> evită încărcarea sistemului cu procese zombie.
+</p>
+<p>
+	Funcția <em>_exit</em> este apelată intern de către nucleu pentru terminarea unui proces ce recepionează semnale ce nu sunt tratate. în acest caz, <em>_exit</em> returnează un cuvânt de stare ce include și numărul de identificare al semnalului.
+</p>
+
+<h5>Așteptarea unui proces</h5>
+<p>
+	Procesul tată poate așteapta terminarea (normală sau cu eroare) procesului fiu folosind apelurile sistem <em>wait</em> sau <em>waitpid</em>.
+</p>
+<p>Sintaxa celor două apeluri este:</p>
+<pre class="code">&lt;sys/types.h&gt;
+&lt;sys/wait.h&gt;
+
+wait( int *pstatus);
+waitpid(pid_t pid, int *pstatus, int opt);
+</pre>
+
+<p>Returnează PID în caz de succes sau 0 ( waitpid) respectiv -1 în caz de eroare.</p>
+<p>Argumentul <em>pstatus</em> este adresa cuvântului de stare.</p>
+<p>Un proces ce apelează <em>wait</em> sau <em>waitpid</em> poate:</p>
+<ul>
+	<li>să se blocheze (dacă toți fiii săi sunt în execuție);</li>
+	<li>să primească starea de terminare a fiului (dacă unul dintre fii s-a terminat);</li>
+	<li>să primească eroare (dacă nu are procese fiu).</li>
+</ul>
+
+<p>Diferențele dintre cele două funcții constau în:</p>
+<ol>
+	<li>
+		wait blochează procesul apelant până la terminarea unui fiu, în timp ce waitpid are o opțiune, precizată prin argumentul <em>opt</em> care evită acest lucru;
+	</li>
+	<li>
+		waitpid nu așteaptă terminarea primului fiu, ci poate specifica prin argumentul <em>opt</em> procesul fiu așteptat;
+	</li>
+	<li>waitpid permite controlul programelor prin argumentul <em>opt</em>.</li>
+</ol>
+<p>
+	Dacă nu există procese fiu, apelul <em>wait</em> întoarce valoarea -1 și poziționează variabila errno la <em>ECHILD</em>.
+</p>
+<p>
+	În ce mod s-a terminat procesul fiu, normal sau cu eroare, se poate afla cu ajutorul parametrului <em>pstatus</em>.
+</p>
+<p>
+	Există trei moduri de a termina un proces: apelul <em>exit</em>, recepionarea unui semnal de terminare (<em>SIGKILL</em>), sau căderea sistemului. Codul de stare returnat prin variabila <em>pstatus</em> indică care dintre primele două moduri a cauzat terminarea (în  al treilea mod procesul parinte și nucleul dispar, așa încât <em>pstatus</em> nu contează).
+</p>
+<p>
+	Argumentul <em>opt</em> din sintaxa apelului <em>waitpid</em> poate avea valorile:
+</p>
+<ul>
+	<li class="fl">
+		<em>WNOHANG</em> <br> Apelul nu se blochează dacă fiul specificat prin pid nu este disponibil. în acest caz valoarea de retur este 0.
+	</li>
+	<li class="fl">
+		<em>WUNTRACED</em> <br> Dacă implementarea permite controlul lucrărilor, starea fiecărui proces fiu oprit și neraportată este întoarsă. Macroul <em>WIFSTOPPED</em> determină dacă valoarea întoarsă corespunde unui proces fiu oprit.
+	</li>
+</ul>
+
+<p>
+	Argumentul <em>opt</em> poate fi și 0 sau rezultatul unui sau una dintre constantele simbolice <em>WNOHANG</em> și <em>WUNTRACED</em>.
+</p>
+<p>
+	În funcție de valoarea lui <em>pid</em> interpretarea funcției <em>waitpid</em> este:
+</p>
+<table>
+	<tbody><tr>
+		<td>
+			<dl>
+				<dt>pid==-1</dt>
+				<dd>se așteaptă orice proces fiu (echivalent wait);</dd>
+
+				<dt>pid&gt;0</dt>
+        <dd>se așteaptă procesul pid;</dd>
+
+        <dt>pid==0</dt>
+        <dd>se așteaptă orice proces cu ID-ul de grup de proces egal cu cel al apelantului;</dd>
+
+        <dt>pid==-1</dt>
+        <dd>se așteaptă orice proces cu ID-ul de grup de proces egal cu valoarea absoluta lui pid.</dd>
+			</dl>
+		</td>
+	</tr>
+</tbody></table>
+<p>
+	Apelul <em>waitpid</em> returnează (-1) dacă nu există un proces sau grup de procese cu pid-ul specificat sau pidul respectiv nu este al unui fiu al său.
+</p>
+          
+
+
+<style>
+        table {
+          border: 1px solid gray;
+          width: 80%;
+        }
+        th {
+          padding: 7px;
+          background-color: #9acd32;
+          text-align: center;
+        }
+        td {
+          padding: 7px;
+        }
+        tr {
+        border-bottom: 1px solid gray;
+        }
+      </style>
+
+
+
+
+    </div>
+
+  
+
+</body></html>

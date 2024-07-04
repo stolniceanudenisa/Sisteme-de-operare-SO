@@ -1,0 +1,10 @@
+I - edit mode
+ESC - command mode
+: salvare
+w - scriere in fisier
+iesire din fisier
+pentru nesalvare fisier: :!q
+chmod - am schimbat drepturile
+rulam - './ceva.sh' - se creeaza un nou proces -
+ va mosteni multe din proces parinte
+./folder./...

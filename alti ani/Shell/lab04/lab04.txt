@@ -1,0 +1,11 @@
+[grep] - utilitar [regex]-ceva [fisier]-fis
+^... ce incep cu ceva
+...$ care se term cu ceva
+[ap] contine a sau p
+[ap][ai] al/ai/pi/pl
+
+grep -E "^(.*) .* \1$" fis
+	  incepe cu orice are spatiu contine orice are spatiu si primul coincide cu ultimul cuvant
+
+sed -re "s/a/z	
+

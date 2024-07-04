@@ -1,0 +1,13 @@
+#!/bin/bash
+text=$1
+n=0
+for i in "$@"
+do
+	grep -l "$1" $i 
+	nr=$(grep -wc "$1" $i)
+	n=$((n+nr))
+done
+echo "Nr de fisiere gasite in care apare cuvantul:"
+echo $n
+	
+

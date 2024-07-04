@@ -1,0 +1,5 @@
+for i in "$@"
+do
+
+	awk '{x[NR] = $0} END { while ( NR > 0 ) print x[NR--] }' $i
+done

@@ -1,0 +1,163 @@
+
+drepturi de executie - 0,5
+validari - 0,5
+mesaj in stderr - 0,5
+rezolvarea problemei - 1,5
+utilitarele folosite corect - restu'
+
+ 
+
+
+grep a fulga.txt -> afiseaza randurile care contin litera a
+
+grep ^m fulga.txt -> afiseaza randurile care incep cu litera m
+grep a$ fulga.txt -> afiseaza randurile care se temina cu litera m
+grep ^a$ fulga.txt -> afis randurile care incep si se termina cu a
+grep [0-9] ->  randurile care contin cifre
+ 
+grep -E [0-9]{2} fulga.txt -> daca gaseste o cifra afiseaza randul ; -E = extended regex (ca sa recunoasca elemente precum {})
+
+grep -E "^[0-9].[0-9]$" -> afis expr de forma cifra caracter cifra
+
+grep -E "^[0-9].[0-9]$" -> ceva de forma: cifra ... (ceva, orice, inclusiv sirul vid) cifra
+
+ -E = extended regex (ca sa recunoasca elemente precum {})
+ . = orice caracter
+ * = ori de cate ori 
+ .* = orice caracter ori de cate ori(inclusiv sirul vid)
+ + = minim un caracter 
+ 
+ 
+ ca sa afisam date de genul: aaaa.ll.zz:
+ grep -E "[0-9]{4}\.[0-9][0-9]\.[0-9][0-9]"
+ 
+ pt validare luna:
+ grep -E "[0-9]{4}\.(0[1-9]|1[0-2])\.[0-9][0-9]"
+ 
+ pt validare zi:
+ grep -E "[0-9]{4}\.(0[1-9]|1[0-2])\.[0-2][0-9]|3[0-1]"
+ 
+ pt. validare serie de buletin (CJ123456) / noile buletine o sa aiba 7 cifre: 
+ grep -E "[a-zA-Z]{2}[0-9]{6,7}" 
+ 
+ 
+ 
+ 
+ sed -r "s/0000/year/" fulga.txt -> inlocuieste doar prima aparite din rand 0000 cu year
+ sed -r "s/0000/year/g" fulga.txt -> inlocuieste toate aparitiile din rand 0000 cu year
+ 
+  g de la final = global
+ 
+ sed -r "s/[0-9]{4}/year/" fulga.txt ->
+ 
+ sed -r "s/[0-9]/year/g" fulga.txt -> inlocuieste fiecare cifra cu year
+ 
+ sed -r "y/0123/abcd/" fulga.txt -> inlocuieste 0 cu a, 1 cu b, 2 cu c si 3 cu d 
+ 
+ 
+ sed -r "s/([a-z]*) ([a-z]*)/\2 \1/" fulga.txt ->  inlocuieste primul cuvant cu al doilea cuvant (inclusiv cu string-ul vid)
+	ex:  padure cu    -> cu padure
+		 ramburs      -> (spatiu)ramburs 
+		 
+		 
+grep -E "^(a-z)* .* \1$" fulga.txt -> cauta liniile care incep si se termina cu acelasi cuvant (format doar din litere, fara cifre)
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 

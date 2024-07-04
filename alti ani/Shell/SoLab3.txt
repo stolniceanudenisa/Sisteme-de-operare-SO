@@ -1,0 +1,135 @@
+Laborator 3
+Problema:
+
+Să se scrie un script shell care tot citeşte nume de utilizatori de la intrarea standard (nu ca parametrii!). Pentru fiecare utilizator citit, el va afişa ultimele 3 conectări (logări) ale acestuia (în luna curentă), iar dacă acesta nu s-a conectat deloc în luna curentă va afişa mesajul "userul x nu s-a conectat niciodată".
+
+Script shell:
+
+while true
+do
+echo "Dati userul dorit:"
+read user
+last|grep Mar > util
+nrL=`grep -w $user util| wc -l`
+if test $nrL -gt 0;
+ then  grep -w $user util|head -n 3
+else
+ echo "userul $user nu s-a conectat niciodata luna asta"
+fi
+done
+
+Labprator 5
+
+Să se afişeze numărul de fişiere din linia de comanda a lui awk, numărul total de cuvinte şi numărul mediu de cuvinte din fişiere.
+
+i=0
+total=0
+for file in $*
+do
+  i=$((i += 1))
+  c=`awk 'BEGIN{t=0}
+  {t=t+NF}
+  END{print t}' $file`
+  total=$(( total += c))
+done
+echo "Numarul de fisiere este $i"
+echo "Numarul total de cuvinte este $total"
+mediu=$(($total/$i))
+echo "Numarul mediu de cuvinte este $mediu"
+
+Laborator 6
+
+Problema:
+Se dă un fişier text. Să se creeze un director care să conţină 26 de fişiere dicţionar, astfel: primul fişier conţine, ordonate alfabetic, câte unul pe linie, toate cuvintele din fisierul text care încep cu litera 'A', al doilea cu litera 'B' s.a.m.d.
+
+Problema Shell:
+
+#!/bin/bash
+file=$1
+dir=$2
+mkdir $dir
+cat $file|while read line;
+do
+   cd $dir
+   for i in {A..Z};
+   do
+      var=${line:0:1}
+      if [ "$var" = "$i" ]
+      then
+         if [ -e $i ]
+         then
+           echo "$line" >> "$i"
+         else
+           echo "$line" > "$i"
+         fi
+      fi
+   done
+   cd ..
+done
+cd $dir
+for i in {A..Z};
+do
+  if [ -e $i ]
+  then
+     echo Fisierul "$i":
+     cat "$i"
+  fi
+done
+
+Laborator 9
+
+Problema:
+Se dă un şir de litere. Folosind în cate un proces pentru fiecare vocala, sa se elimine toate vocalele din acest sir.
+
+Rezolvare:
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdlib.h>
+
+
+int status=0;
+char sir[50]="AndreEaIoana caUlucristid",vocale[10]="aeiouAEIOU";
+int n=strlen(sir),i,j,k,pid=0,trigger=0;
+int main(){
+i=0;
+pid=0;
+//printf("Proces parinte %d \n",getpid());
+while(i<strlen(vocale)){
+if(pid==0)
+{pid=fork();
+trigger=0;
+if(pid==0){
+//		printf("Inceput: proces : %d \n",getpid());
+	j=0;
+	while(j<n){
+		if(sir[j]==vocale[i]){
+ 			for(k=j+1;k<n;k++)
+				sir[k-1]=sir[k];
+			sir[n-1]='\0';
+			n--;
+		}
+		j++;
+	}
+i++;
+if(i==10){
+//                printf("Procesul: %d \n",getpid());
+	printf("Sirul este: %s \n",sir);
+	}
+}
+}
+else{
+	if(trigger==0){
+		trigger=1;
+//			printf("Inainte de wait %d \n",getpid());
+		wait(&status);
+//			printf("Dupa wait %d \n",getpid());
+	}
+	i++;
+}
+}
+return 0;
+}
+

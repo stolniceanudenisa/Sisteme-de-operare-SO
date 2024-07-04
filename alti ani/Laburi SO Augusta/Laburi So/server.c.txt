@@ -1,0 +1,26 @@
+#include<stdio.h>
+#include<string.h>
+#include<unistd.h>
+#include<sys/stat.h>
+#include<sys/types.h>
+#include<fcntl.h>
+
+int main(){
+
+        int  myfifo1,myfifo2;
+        char buf[80];
+
+        //deschiderea fisierului myfifo1 pentru citire
+        myfifo1=open("myfifo1", O_RDONLY);
+        read(myfifo1, buf, 80);
+
+        //crearea fisierului myfifo2 ( path,drepturi de acces)
+        mkfifo("myfifo2",0666);
+
+        //deschiderea fisierului myfifo2 pentru scriere
+        myfifo2=open("myfifo2", O_WRONLY);
+        dup2(myfifo2,1);
+        execlp("/home/ale/dir2.sh","dir2.sh",buf,NULL);
+        perror("execlp");
+        return 0;
+}

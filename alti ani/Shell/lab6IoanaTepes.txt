@@ -1,0 +1,10 @@
+Se da un program C. Sa se determine, pentru fiecare functie definita în program, numarul locurilor unde este apelata, afisându-se si numerele de linii din program unde apar aceste apeluri
+
+for i in `grep "function " program.txt| sed 's/.*function \([a-zA-Z0-9]*\) .*/\1/'`
+do
+apare=`grep -c $i program.txt`
+apare1=$((apare-1))
+linie=`grep -n $i program.txt | cut -d: -f1 | tail -n $apare1`
+echo "Functia: $i apare de $((apare=apare-1)) ori."
+echo "Este apelata pe liniile: $linie"
+done

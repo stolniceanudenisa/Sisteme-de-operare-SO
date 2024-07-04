@@ -1,0 +1,5 @@
+bogdan.zarnescu_lab06_pr10.sh
+test1:1
+test2:1
+test3:1
+test4:1

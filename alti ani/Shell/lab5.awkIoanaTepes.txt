@@ -1,0 +1,50 @@
+Sa se afiseze pentru fiecare fisier din linia de comanda raportul dintre numarul de vocale si numarul de consoane.
+Ex (file1.txt v/c = 123/12)
+
+
+{F[FILENAME]++
+
+for(i=1;i<=NF;i++){
+	
+if(length($i) == 1){
+		
+if ($i == "a" || $i == "e" || $i == "i" || $i == "o" || $i == "u" || $i == "A" || $i == "E" || $i == "I" || $i == "O" || $i == "U")
+			
+voc[FILENAME]++;
+		
+else
+			
+cons[FILENAME]++;
+	
+}
+	
+else{
+	litera=substr($i,1,1);
+	
+if (litera== "a" || litera == "e" || litera == "i" || litera== "o" || litera == "u" || $i == "A" || $i == "E" || $i == "I" || $i == "O" || $i == "U")
+		
+voc[FILENAME]++;
+	
+else
+		
+cons[FILENAME]++;
+	
+for(j=1;j<length($i);j++){
+		
+litera=substr($i,j+1,1);
+		
+if (litera== "a" || litera == "e" || litera == "i" || litera== "o" || litera == "u" || $i == "A" || $i == "E" || $i == "I" || $i == "O" || $i == "U" )
+
+voc[FILENAME]++;
+		
+else
+			
+cons[FILENAME]++;}
+
+}
+}
+}
+
+END {for (f in F)
+print f," " ,voc[FILENAME], "/", cons[FILENAME];
+}
