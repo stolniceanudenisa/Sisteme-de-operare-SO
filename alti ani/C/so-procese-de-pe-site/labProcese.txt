@@ -1,0 +1,4 @@
+Sa se implementeze un program care creeaza o ierarhie de procese in care
+el este strabunic celui mai "tanar" proces. Fiecare proces isi va tipari
+PID-ul si PID-ul parintelui, va astepta dupa procesul fiu direct si apoi
+se va termina.

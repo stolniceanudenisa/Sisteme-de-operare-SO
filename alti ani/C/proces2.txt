@@ -1,0 +1,61 @@
+/*
+Procesul 2 
+	- primeste de la Proces1 sirul de caractere si inlocuieste
+	cifrele cu 9
+	- trimite sirul nou Procesului4
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+
+int main(){
+   int cod, fd, i, fd24;
+   char l,c;
+   char buf[100];
+
+
+   //creez pipe-ul cu nume
+   cod=mkfifo("pipe_1to2",0666);
+   if (cod<0){
+	printf("\nPROCES2: Eroare la creare FIFO.");
+   }
+   
+   //deschid pipe-ul pentru citire
+   fd=open("pipe_1to2",O_RDONLY);
+   if (fd<0){
+	printf("\nPROCES2: Eroare la deschidere FIFO");
+	exit(1);
+   }
+
+   //citesc din pipe
+   i=0;
+   do{
+	l=read(fd,&c,sizeof(char));
+	if(l>0){	//e valid
+        	if ((c>='0') && (c<='9'))
+	    		buf[i] = '9';
+		else
+	    		buf[i] = c;
+		i++;
+	}
+   }while (l>0);
+
+   buf[i]=0;
+   close(fd);
+
+   //printf("Am citit din pipe: %s", buf);
+   unlink("pipe_1to2");
+
+
+   //deschid pipe-ul pentru scriere in 4
+   fd24=open("pipe_2to4",O_WRONLY);
+   if (fd24<0){
+	printf("PROCES2: Eroare la deschidere FIFO2->4.");
+	exit(1);
+   }
+   //transmit sirul modificat procesului 4
+   write(fd24,buf,strlen(buf));
+   close(fd24);
+}

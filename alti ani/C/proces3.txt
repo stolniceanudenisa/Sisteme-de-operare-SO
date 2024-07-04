@@ -1,0 +1,59 @@
+/*
+Procesul 3 - primeste de la Proces1 sirul de caractere si inlocuieste
+	literele cu G
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+
+int main(){
+   int cod, fd, i, fd34;
+   char l,c;
+   char buf[100];
+
+
+   //creez pipe-ul cu nume
+   cod=mkfifo("pipe_1to3",0666);
+   if (cod<0){
+	printf("\nPROCES3: Eroare la creare FIFO1->3.");
+   }
+   
+   //deschid pipe-ul pentru citire
+   fd=open("pipe_1to3",O_RDONLY);
+   if (fd<0){
+	printf("\nPROCES3: Eroare la deschidere FIFO");
+	exit(1);
+   }
+
+   //citesc din pipe
+   i=0;
+   do{
+	l=read(fd,&c,sizeof(char));
+	if(l>0){	//e valid
+        	if (((c>='a') && (c<='z')) || ((c>='A') && (c<='Z')))
+	    		buf[i] = 'G';
+		else
+	    		buf[i] = c;
+		i++;
+	}
+   }while (l>0);
+
+   buf[i]=0;
+   close(fd);
+
+   //printf("Am citit din pipe: %s", buf);
+   unlink("pipe_1to3");
+
+   
+   //deschid pipe-ul pentru scriere in 4
+   fd34=open("pipe_3to4",O_WRONLY);
+   if (fd34<0){
+	printf("PROCES3: Eroare la deschidere FIFO3->4.");
+	exit(1);
+   }
+   //transmit sirul modificat procesului 4
+   write(fd34,buf,strlen(buf));
+   close(fd34);
+}

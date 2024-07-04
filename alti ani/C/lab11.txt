@@ -1,0 +1,261 @@
+int main(int argc, char* argv[]) {
+    FILE* f = fopen(argv[1], "r");
+    if (f == NULL) {
+        fprintf(stderr, "parametru invalid\n");
+        return 1;
+    }
+
+    int nr_films = 0;
+    int nr_series = 0;
+    char line[512];
+    while (fgets(line, sizeof(line), f) != NULL){
+    int pid = fork();
+    if(pid < 0){
+        fprintf(stderr, "Error in waitpid\n");
+        return 1;
+    } else if (pid == 0) {
+        char type[10];
+        char nume[20];
+        int durata;
+        int an;
+        char tip[20];
+        sscanf(line, "%[^;];%[^;];%d;%d;%[^;]", nume, type, &durata, &an, tip);
+        if (strcmp(type, "film") == 0) {
+            exit(5);
+        }
+        if (strcmp(type, "serial") == 0) {
+            exit(6);
+        }
+        exit(0);
+    }else if (pid>0){
+        int status;
+        if(wait(&status)>0){
+        int exit_status = WEXITSTATUS(status);
+            if (exit_status == 5) {
+                nr_films++;
+            } else if (exit_status == 6) {
+                nr_series++;
+            }else{
+                break;
+            }}
+    }
+    }
+    fclose(f);
+    printf("%d\n", nr_films);
+    printf("%d\n", nr_series);
+    return 0;
+}
+————————
+	1	int main(int argc, char* argv[]): This is the main function of the program, the entry point of execution. It takes two arguments: argc, the number of command-line arguments, and argv, an array of strings containing the command-line arguments.
+	2	FILE* f = fopen(argv[1], "r");: This line opens a file specified by the second command-line argument (argv[1]) for reading and assigns the file pointer to the variable f.
+	3	if (f == NULL) { ... }: This condition checks if the file opening was successful by checking if f is a null pointer. If the file opening fails, an error message is printed, and the program returns 1, indicating an error.
+15-16. int nr_films = 0; and int nr_series = 0;: These lines initialize two integer variables nr_films and nr_series to 0, which will be used to count the number of films and series.
+	17	char line[512];: This declares a character array line with a size of 512, which will be used to store lines read from the file.
+	18	while (fgets(line, sizeof(line), f) != NULL) { ... }: This loop reads lines from the file using fgets until there are no more lines to read. Each line is stored in the line array.
+	19	int pid = fork();: This line creates a new process by forking the current process. The fork function returns the process ID of the child process in the parent process and 0 in the child process.
+	20	if (pid < 0) { ... }: This condition checks if the fork function failed to create a new process. If the condition is true, an error message is printed, and the program returns 1.
+	22	char type[10];, char nume[20];, int durata;, int an;, char tip[20];: These lines declare variables that will be used to store parsed values from the line string.
+	23	sscanf(line, "%[^;];%[^;];%d;%d;%[^;]", nume, type, &durata, &an, tip);: This line uses sscanf to parse the values from the line string based on the given format string. The parsed values are stored in the respective variables.
+28-35. This block of code checks the value of type and exits the child process with different exit codes based on the comparison results. If type is "film", the child process exits with code 5. If type is "serial", the child process exits with code 6. Otherwise, the child process exits with code 0.
+	39	int status;: This line declares a variable status that will be used to store the exit status of the child process.
+	40	if (wait(&status) > 0) { ... }: This line waits for the child process to complete and stores the exit status in the status variable. If the return value of wait is greater than 0, indicating the child process terminated successfully, the condition is true.
+42-48. This block of code checks the exit status of the child process and increments the respective counter (nr_films or nr_series) based on the exit status value. If the exit status is neither 5 nor 6, the loop is terminated using break.
+	53	fclose(f);: This line closes the file opened earlier using fopen.
+54-55. printf("%d\n", nr_films); and printf("%d\n", nr_series);: These lines print the values of nr_films and nr_series, respectively.
+	57	return 0;: This line indicates successful program execution and returns 0 to the operating system.
+-------------
+int fd[2];
+    if (pipe(fd) == -1) {
+        fprintf(stderr, "Error creating pipe\n");
+        return 1;
+    }
+
+    char line[512];
+    while (fgets(line, sizeof(line), f) != NULL) {
+        pid_t pid = fork();
+        if (pid < 0) {
+            fprintf(stderr, "Error in waitpid\n");
+            exit(EXIT_FAILURE);
+        }
+        else if (pid == 0) {
+            close(fd[0]);  // Close the read end of the pipe
+
+            char type[10];
+            char nume[20];
+            int durata;
+            int an;
+            char tip[20];
+            sscanf(line, "%[^;];%[^;];%d;%d;%[^;]", nume, type, &durata, &an, tip);
+            if (strcmp(type, "film") == 0) {
+                write(fd[1], "film", sizeof("film"));
+                exit(EXIT_SUCCESS);
+            }
+            else if (strcmp(type, "serial") == 0) {
+                write(fd[1], "serial", sizeof("serial"));
+                exit(EXIT_SUCCESS);
+            }
+            else {
+                write(fd[1], "other", sizeof("other"));
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    close(fd[1]);
+
+    char buffer[10];
+    ssize_t read_bytes;
+    while ((read_bytes = read(fd[0], buffer, sizeof(buffer))) > 0) {
+        if (strncmp(buffer, "film", read_bytes) == 0) {
+            nr_films++;
+        }
+        else if (strncmp(buffer, "serial", read_bytes) == 0) {
+            nr_series++;
+        }
+    }
+----
+Certainly! Here's an explanation of the code line by line:
+
+1. `int fd[2];`: This line declares an array `fd` with two elements. The array will be used to store file descriptors for the read and write ends of a pipe.
+
+3. `if (pipe(fd) == -1) { ... }`: This line creates a pipe using the `pipe` function. If the function returns `-1`, it means an error occurred while creating the pipe. In that case, an error message is printed, and the program returns `1` to indicate an error.
+
+5. `char line[512];`: This line declares a character array `line` with a size of 512, which will be used to store lines read from the file.
+
+6. `while (fgets(line, sizeof(line), f) != NULL) { ... }`: This loop reads lines from the file using `fgets` until there are no more lines to read. Each line is stored in the `line` array.
+
+8. `pid_t pid = fork();`: This line creates a new process by forking the current process. The `fork` function returns the process ID of the child process in the parent process and `0` in the child process.
+
+10. `if (pid < 0) { ... }`: This condition checks if the `fork` function failed to create a new process. If the condition is true, an error message is printed, and the program exits with `EXIT_FAILURE`.
+
+14. `close(fd[0]);`: This line closes the read end of the pipe in the child process. The child process only needs the write end of the pipe to communicate with the parent process.
+
+17-32. This block of code runs in the child process. It parses the values from the `line` string and writes a corresponding string (`"film"`, `"serial"`, or `"other"`) to the write end of the pipe using the `write` function. Then, it exits the child process with `EXIT_SUCCESS` or `EXIT_FAILURE` based on the comparison results.
+
+34. `close(fd[1]);`: This line closes the write end of the pipe in the parent process. The parent process only needs the read end of the pipe to read the data written by the child processes.
+
+36. `char buffer[10];`: This line declares a character array `buffer` with a size of 10, which will be used to store data read from the pipe.
+
+37. `ssize_t read_bytes;`: This line declares a variable `read_bytes` of type `ssize_t` that will be used to store the number of bytes read from the pipe.
+
+38. `while ((read_bytes = read(fd[0], buffer, sizeof(buffer))) > 0) { ... }`: This loop reads data from the read end of the pipe using the `read` function. It continues reading until there is no more data to read (`read` returns `0`) or an error occurs. The data read is stored in the `buffer` array, and the number of bytes read is stored in the `read_bytes` variable.
+
+40-45. This block of code checks the content of the `buffer` and increments the respective counter (`nr_films` or `nr_series`) based on the comparison results.
+
+Please note that there are variables `nr_films` and `nr_series` mentioned in the code, which are likely declared earlier in the program.
+
+---------
+const char* pipe_name = "mypipe";
+    struct stat pipe_stat;
+    if (stat(pipe_name, &pipe_stat) == 0) {
+        fprintf(stderr, "Named pipe already exists\n");
+        return 1;
+    }
+
+    if (mkfifo(pipe_name, 0666) == -1) {
+        fprintf(stderr, "Error creating named pipe\n");
+        return 1;
+    }
+
+    int pipe_fd = open(pipe_name, O_RDWR);
+    if (pipe_fd == -1) {
+        fprintf(stderr, "Error opening named pipe for read/write\n");
+        return 1;
+    }
+
+    char line[512];
+    while (fgets(line, sizeof(line), f) != NULL) {
+        pid_t pid = fork();
+        if (pid < 0) {
+            fprintf(stderr, "Error in waitpid\n");
+            exit(EXIT_FAILURE);
+        } else if (pid == 0) {
+            close(STDOUT_FILENO);
+            dup2(pipe_fd, STDOUT_FILENO);
+            close(pipe_fd);
+
+            char type[10];
+            char nume[20];
+            int durata;
+            int an;
+            char tip[20];
+            sscanf(line, "%[^;];%[^;];%d;%d;%[^;]", nume, type, &durata, &an, tip);
+            if (strcmp(type, "film") == 0) {
+                printf("film\n");
+                exit(EXIT_SUCCESS);
+            } else if (strcmp(type, "serial") == 0) {
+                printf("serial\n");
+                exit(EXIT_SUCCESS);
+            } else {
+                printf("other\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    close(pipe_fd);
+
+    int pipe_fd_read = open(pipe_name, O_RDONLY);
+    if (pipe_fd_read == -1) {
+        fprintf(stderr, "Error opening named pipe for reading\n");
+        return 1;
+    }
+
+    char buffer[10];
+    ssize_t read_bytes;
+    while ((read_bytes = read(pipe_fd_read, buffer, sizeof(buffer))) > 0) {
+        if (strncmp(buffer, "film", read_bytes) == 0) {
+            nr_films++;
+        } else if (strncmp(buffer, "serial", read_bytes) == 0) {
+            nr_series++;
+        }
+    }
+
+    fclose(f);
+    printf("%d\n", nr_films);
+    printf("%d\n", nr_series);
+
+    close(pipe_fd_read);
+    unlink(pipe_name);
+--------
+Certainly! Here's an explanation of the code line by line:
+
+1. `const char* pipe_name = "mypipe";`: This line declares a constant character pointer `pipe_name` and assigns it the value `"mypipe"`. It represents the name of the named pipe.
+
+2. `struct stat pipe_stat;`: This line declares a variable `pipe_stat` of type `struct stat` that will be used to store information about the named pipe.
+
+3. `if (stat(pipe_name, &pipe_stat) == 0) { ... }`: This line uses the `stat` function to check if the named pipe already exists. If the function call returns `0`, indicating success, it means that the named pipe already exists. In that case, an error message is printed, and the program returns `1` to indicate an error.
+
+5. `if (mkfifo(pipe_name, 0666) == -1) { ... }`: This line creates a named pipe using the `mkfifo` function. It specifies the `pipe_name` and the file permissions (`0666` corresponds to read and write permissions for all users). If the function call returns `-1`, indicating an error, it means that the named pipe creation failed. In that case, an error message is printed, and the program returns `1` to indicate an error.
+
+7. `int pipe_fd = open(pipe_name, O_RDWR);`: This line opens the named pipe for reading and writing using the `open` function. It assigns the file descriptor for the named pipe to the variable `pipe_fd`. If the `open` function returns `-1`, indicating an error, it means that the opening of the named pipe failed. In that case, an error message is printed, and the program returns `1` to indicate an error.
+
+12. `while (fgets(line, sizeof(line), f) != NULL) { ... }`: This loop reads lines from the file using `fgets` until there are no more lines to read. Each line is stored in the `line` array.
+
+14. `pid_t pid = fork();`: This line creates a new process by forking the current process. The `fork` function returns the process ID of the child process in the parent process and `0` in the child process.
+
+16. `if (pid < 0) { ... }`: This condition checks if the `fork` function failed to create a new process. If the condition is true, an error message is printed, and the child process exits with `EXIT_FAILURE`.
+
+20-44. This block of code runs in the child process. It closes the standard output (`STDOUT_FILENO`), duplicates the file descriptor of the named pipe (`pipe_fd`) to the standard output, and closes the original file descriptor of the named pipe. Then, it parses the values from the `line` string and uses `printf` to write "film", "serial", or "other" to the named pipe based on the comparison results. Finally, it exits the child process with `EXIT_SUCCESS` or `EXIT_FAILURE` based on the comparison results.
+
+46. `close(pipe_fd);`: This line closes the file descriptor of the named pipe in the parent process.
+
+48. `int pipe_fd_read = open(pipe_name, O_RDONLY);`: This line opens the named pipe for reading only using the `open` function. It assigns the file descriptor for the named pipe to the variable `pipe_fd_read`. If the `open` function returns `-1`, indicating an error, it means that the opening of the named pipe failed. In that case, an error message is printed, and the program returns `1` to indicate an error.
+
+50. `char buffer[10];`: This
+
+ line declares a character array `buffer` with a size of 10, which will be used to store data read from the named pipe.
+
+51. `ssize_t read_bytes;`: This line declares a variable `read_bytes` of type `ssize_t` that will be used to store the number of bytes read from the named pipe.
+
+52. `while ((read_bytes = read(pipe_fd_read, buffer, sizeof(buffer))) > 0) { ... }`: This loop reads data from the named pipe using the `read` function. It continues reading until there is no more data to read (`read` returns `0`) or an error occurs. The data read is stored in the `buffer` array, and the number of bytes read is stored in the `read_bytes` variable.
+
+54-57. This block of code checks the content of the `buffer` and increments the respective counter (`nr_films` or `nr_series`) based on the comparison results.
+
+59. `fclose(f);`: This line closes the file that was opened earlier.
+
+61-62. These lines print the values of `nr_films` and `nr_series` respectively.
+
+64. `close(pipe_fd_read);`: This line closes the file descriptor of the named pipe used for reading in the parent process.
+
+65. `unlink(pipe_name);`: This line removes the named pipe from the file system.

@@ -1,0 +1,68 @@
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char* argv[])
+{
+	//Deschid primele doua fisiere pentru citire
+	FILE* f1 = fopen(argv[1], "r");
+	FILE* f2 = fopen(argv[2], "r");
+
+	//Deschid fisierul rezultat pentru scriere
+	FILE* f3 = fopen("rezultat.txt", "w");
+
+	//Erori
+	if (f1 == NULL || f2 == NULL || f3 == NULL)
+	{
+		printf("Unable to open one of the files!");
+		return 0;	
+	}
+
+	char line_buffer1[1000], line_buffer2[1000];
+	char *linie1, *linie2;
+	linie1=fgets(line_buffer1,1000,f1);
+	linie2=fgets(line_buffer2,1000,f2);
+	
+	while ((linie1 != NULL) && (linie2 != NULL))
+	{
+	
+		//daca linia1 <= linia2, adaug linia1 in fisier3
+		if (strcmp(linie1,linie2) <= 0)
+		{
+			fprintf(f3,"%s",linie1);
+			linie1=fgets(line_buffer1,1000,f1);
+		}
+		else
+		{
+			fprintf(f3,"%s",linie2);
+			linie2=fgets(line_buffer2,1000,f2);
+		}
+	}
+	
+	//daca au ramas elemente din fisierul1	
+	
+	while (linie1 != NULL)
+	{
+		fprintf(f3,"%s",linie1);
+		linie1=fgets(line_buffer1,1000,f1);
+	}
+
+	//daca au ramas elemente din fisierul2
+	
+	while (linie2 != NULL)
+	{
+		fprintf(f3,"%s",linie2);
+		linie2=fgets(line_buffer2,1000,f2);
+	}	
+        
+	fclose(f1);
+        fclose(f2);
+	fclose(f3);
+
+	return 0;
+}
+
+/*
+Sa se intercaleze liniile a doua fisiere care se presupune a fi ordonate. 
+Numele celor doua fisiere se vor transmite programului ca si parametrii in linia de comanda.
+Inovan Maria Mihaela, grupa 322/2
+*/

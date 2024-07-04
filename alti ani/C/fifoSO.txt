@@ -1,0 +1,205 @@
+1.c
+//procesul 1: citeste
+#include <unistd.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <fcntl.h>
+#include <wait.h>
+int main(){
+int f12;
+char sir[300],s[40];
+f12=open("fifo12",O_WRONLY);
+if(f12<0){
+	printf("Eroare la deschidere");
+	exit(1);
+}
+printf("Dati sirul: ");
+strcpy(sir,"");
+while(strcmp(s,"\n")!=0){
+	fgets(s,40,stdin);
+	if(strcmp(s,"\n")!=0)
+		strcat(sir,s);
+}
+//printf("\n %s",sir);
+write(f12,sir,strlen(sir));
+close(f12);
+exit(0);
+}
+2.c
+//procesul 2: sorteaza
+#include <unistd.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <fcntl.h>
+#include <wait.h>
+int main(){
+int i,j,k,l,f12,f24,cod;
+char line[40],sir[300],aux;
+cod=mkfifo("fifo12",0666);
+if(cod<0){
+	printf("eroare la creare pipe");
+	exit(1);
+}
+f12=open("fifo12",O_RDONLY);
+if(f12<0)
+	printf("Eroare");
+
+read(f12,sir,300);
+//printf("Am primit de la sirul:\n%s \n",sir);
+close(f12);
+unlink("fifo12");
+//sortarea sirului
+f24=open("fifo24",O_WRONLY);
+strcpy(line,"");
+j=0;
+for(i=0;i<strlen(sir);i++){
+	if(sir[i]!='\n')
+		{line[j]=sir[i];j++;}
+	else
+		{
+		if(strcmp(line,"")!=0){
+		line[j]='\0';
+		for(k=0;k<strlen(line)-1;k++)
+			{	for(l=k+1;l<strlen(line);l++){
+						if(line[k]>line[l]){
+						aux=line[k];
+						line[k]=line[l];
+						line[l]=aux;
+					}
+				}
+			}
+		line[j]='\n';
+		line[j+1]='\0';
+		j=0;
+		while(line[0]==' ')
+			strcpy(line,line+1);
+		write(f24,line,strlen(line));
+		line[0]='\0';
+		}
+	}
+}
+close(f24);
+}
+3.c
+//procesul 3: inlocuieste caracterul X
+
+
+#include <unistd.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <fcntl.h>
+#include <wait.h>
+int main(){
+int f34,i;
+char c,sir[300],s[40];
+f34=open("fifo34",O_WRONLY);
+if(f34<0){
+	printf("Eroare la deschidere");
+	exit(1);
+}
+printf("Dati sirul: ");
+strcpy(sir,"");
+while(strcmp(s,"\n")!=0){
+	fgets(s,40,stdin);
+	if(strcmp(s,"\n")!=0)
+		strcat(sir,s);
+}
+//printf("Sirul este:%s",sir);
+printf("Dati caracterul cu care se fie inlocuit X:");
+scanf("%s",&c);
+//printf("\n %s",sir);
+for(i=0;i<strlen(sir);i++)
+	if(sir[i]=='X')
+		sir[i]=c;
+write(f34,sir,strlen(sir));
+close(f34);
+exit(0);
+}
+4.c
+//procesul 4: afiseaza
+
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <fcntl.h>
+#include <wait.h>
+
+void afisare( char sir[30]){
+int i,j=0;
+char line[30];
+printf("Sirul este:");
+for(i=0;i<strlen(sir);i++){
+	if(sir[i]!='\n')
+		{line[j]=sir[i];j++;}
+	else
+		{
+		if(strcmp(line,"")!=0){
+		line[j]='\0';
+		if(strlen(line)>10)
+			printf("%s\n",line);
+		j=0;
+		line[0]='\0';
+		}
+	}
+}
+}
+ 
+int main(){
+int f24,f34;
+char sir1[300],sir2[300];
+if(mkfifo("fifo24",0666)==-1){
+	if(errno==17)
+		printf("Fisierul fifo24 exista deja");
+	else
+		printf("Eroare la creare");
+	exit(0);
+}
+if(mkfifo("fifo34",0666)==-1){
+	if(errno==17)
+		printf("Fisierul fifo 34 exista deja");
+	else
+		printf("Eroare la creare");
+	exit(0);
+}
+f24=open("fifo24",O_RDONLY);
+read(f24,sir1,300);
+close(f24);
+afisare(sir1);
+unlink("fifo24");
+f34=open("fifo34",O_RDONLY);
+read(f34,sir2,300);
+afisare(sir2);
+close(f34);
+unlink("fifo34");
+}
+asta este
+e pe mai multe fisiere
+4 mai exact
+si daca vrei sa o rulezi trebuie sa scrii
+:
+gcc 1.c -o 1
+gcc 2.c -o 2
+gcc 3.c -o 3
+gcc 4.c -o 4
+./4 & ./2 &
+./1
+./3

@@ -1,0 +1,21 @@
+
+
+
+#echo "Numele de fisiere mai mici de 8 caractere:"
+for x in `find $1 -type f`;do
+	b=`echo $x | awk 'BEGIN {FS="/"};{print $NF;}'` 
+	c=`echo $b | wc -c`
+	#echo "Numele de fisier:"
+	if [ $c -lt 8 ];then
+		echo "Nume de fisier:"
+		echo $b, $c
+		 
+		 `file $x| grep -q "ASCII text"` 
+		if [ $? -eq 0 ] 
+			then 
+			echo "E fisier text:"
+			head -10 $x
+			fi
+	fi
+
+done

@@ -1,0 +1,67 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+int main()
+{
+	int f;
+	int f_p,f_f;
+	if(mkfifo("./f_p",0600)<0)
+	{
+		perror("eroare la creare f_p");
+		exit(1);
+	}
+	if(mkfifo("./f_f",0600)<0)
+	{
+		perror("eroare la creare f_f");
+		exit(2);
+	}
+	f=fork();
+	if(f==0)
+	{
+		int a,b,s;
+		f_p=open("./f_p",O_RDONLY);
+		f_f=open("./f_f",O_WRONLY);
+		printf("FD f_fiu %d\n",f_f);
+		printf("FD f_parinte %d\n",f_p);
+		if(read(f_p,&a,sizeof(int))<0 || read(f_p,&b,sizeof(int))<0)
+		{
+			perror("eroare la citire in fiu din fiserul f_p");
+			exit(3);
+		}
+		s=a+b;
+		if(write(f_f,&s,sizeof(int))<0)
+		{
+			perror("eroare la scriere in fiu in fiserul f_f");
+			exit(4);
+		}
+		close(f_p);
+		close(f_f);
+	}
+	int m,n,t;
+	printf("dati primul numar:");
+	scanf("%d",&n);
+	printf("dati al doilea numar:");
+	scanf("%d",&m);
+	f_p=open("./f_p",O_WRONLY);
+	f_f=open("./f_f",O_RDONLY);
+	if(write(f_p,&n,sizeof(int))<0 || write(f_p,&m,sizeof(int))<0)
+	{
+		perror("eroare la scriere in parinte in f_p");
+		exit(5);
+	}
+	if(read(f_f,&t,sizeof(int))<0)
+	{
+		perror("eroare la citire in parinte in f_f");
+		exit(6);
+	}
+	printf("Suma numerelor %d si %d este %d\n",n,m,t);
+	close(f_p);
+	close(f_f);
+	unlink("./f_p");
+	unlink("./f_f");
+	return 0;
+}

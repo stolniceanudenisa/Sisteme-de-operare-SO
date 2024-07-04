@@ -1,0 +1,95 @@
+                Threaduri
+
+1. Scrieti un program care pentru fiecare argument din linia de comanda creeaza un thread care:
+	- verifica daca argumentul dat este un fisier sau un folder si in functie de rezultat va creste una din variabilele globale nr_files sau nr_folders (daca nu este nici fisier nici folder nu face nimic)
+La sfarsit programul principal afiseaza numarul de fisiere si foldere.
+ 
+2. Scrieti un program care primeste ca argumente numere. Pentru fiecare argument din linia de comanda creeaza un thread care verificadaca numarul este palindrom si in caz afirmativ incrementeaza o suma globala (in thread).
+Un numar este palindrom daca este egal cu oglindirea lui. De ex 1234321 este palindrom, 1221 este palindrom.
+
+3. Scrieti un program in care definiti un vector cu 5 elemente care contine numerele de la 1 la 5 in ordine aleatoare. 
+Creati 5 threaduri care primesc v[i] ca si parametru si efectueaza urmatoarea operatie de v[i] ori:
+	- afiseaza id-ul threadului
+	- incrementeaza o variabila globala cu un numar aleator, pe care il si afiseaza
+
+4. Scrieti un program care primeste ca argumente cuvinte. Pentru fiecare argument din linia de comanda creeaza un thread care verificadaca cuvantul este palindrom si in caz afirmativ incrementeaza o suma globala (in thread).
+Un cuvant este palindrom daca este egal cu oglindirea lui. De ex cojoc este palindrom.
+
+5. Scrieti un program in care definiti un vector cu 5 elemente care contine numerele de la 1 la 5 in ordine aleatoare. Initializati o variabila globala cu 1.
+Creati 5 threaduri care primesc v[i] ca si parametru si efectueaza urmatoarea operatie:
+	- asteapta pana variabila globala are valoarea egala cu v[i]
+	- afiseaza id-ul threadului
+	- incrementeaza variabila globala cu 1
+	
+6. Scrieti un program care creeaza 20 threaduri care efectueaza urmatoarea operatie:
+	- incearca sa incrementeze variabila globala sum cu 1, daca aceasta este mai mica decat 100
+	- threadul care ajunge la valoarea o suta afiseaza ca a castigat apoi se termina
+	- daca valoarea este deja 100 threadul se termina
+	- threadul are voie sa faca o singura operatie odata
+
+7. Scrieti un program care creeaza 2 threaduri care isi afiseaza de 10 ori fiecare id-ul. Asigurati-va folosind mutex si nu variabile conditionale ca threadurile isi afiseaza id-ul alternativ.
+	
+	
+
+
+      Procese
+
+1. Sa se implementeze un proces care primeste ca argumente numere. Pentru fiecare argument creeaza alt proces care va verifica daca argumentul este un numar prim.
+Procesul principal va afisa rezultat primit de la procesele fiu pentru fiecare argument. Comunicarea intre procese se va face cu pipe.
+
+2. Sa se implementeze un proces care primeste ca argumente numere. Pentru fiecare argument creeaza alt proces care va calcula cel mai mare divizor prim al numarului primit.
+Procesul principal va afisa rezultat primit de la procesele fiu pentru fiecare argument. Comunicarea intre procese se va face cu pipe.
+
+3. Sa se implementeze doua procese care comunica prin FIFO si nu sunt rude. Primul proces ii scrie in FIFO un numar.
+Al doilea proces adauga un numar aleator intre 1 si 10 la numarul primit si verifica daca suma este un numar par. 
+Daca da atunci afiseaza ca a castigat, trimite -1 celuilalt proces si se opresc ambele procese.
+In caz contrar ii trimite primului proces numarul obtinut si continua circular aceeasi actiune in ambele procese. 
+-1 este conditia de oprire: procesul care primeste -1 doar se termina si nu mai trimite nimic celuilalt.
+Toate operatiunile se afiseaza pe ecran impreuna cu un identificator pentru proces.
+
+ex. P1 -> 5 la P2
+    P2: 5 + 6(aleator) = 11 (nu e par)
+	P2 -> 11 la P1
+	P1: 11 + 2 = 13 (nu e par)
+	P1 -> 13 la P2
+	P2: 13 + 3 = 16 (par)
+	P2: "I won" 
+	P2 ->-1 la P1
+	
+4. Sa se implementeze doua procese care comunica prin pipe. Primul proces ii trimite celui de-al doilea un numar.
+Daca numarul primit de al doilea proces este par il imparte la 2 si i-l trimite inapoi primului proces, daca nu afiseaza DONE si ii trimite primului proces -1 apoi ambele procese se termina.
+Daca a primit un numar este divizibil cu 3 atunci primul proces il imparte 3 si i-l trimite inapoi celuilalt proces, daca nu afiseaza DONE  si ii trimite celuilalt -1 apoi se termina ambele procese.
+Se repeta algoritmul pana unul din procese nu mai poate imparti numarul.
+-1 este conditia de oprire: procesul care primeste -1 doar se termina si nu mai trimite nimic celuilalt.
+Toate operatiunile se afiseaza pe ecran impreuna cu un identificator pentru proces.
+
+ex
+P1 -> 36 la P2
+    	P2: 36 / 2 = 18
+	P2 -> 18 la P1
+	P1: 18 / 3 = 6
+	P1 -> 6 la P2
+	P2:  6 / 2 = 3
+	P2 -> 3 P1
+	P1: 3 / 3 =1
+	P1 ->  1 P2
+	P2:  “P1 is DONE “
+	P2 -> -1 la P1
+	P1: exit
+
+5. Sa se implementeze doua procese care comunica prin FIFO si nu sunt rude. Primul proces ii scrie in FIFO un numar.
+Al doilea proces adauga un numar aleator intre s1 i 10 la numarul primit si verifica daca suma este un numar prim. 
+Daca da atunci afiseaza ca a castigat, trimite mesajul "FINISH" si se opresc ambele procese.
+In caz contrar ii trimite primului proces numarul obtinut si continua circular aceeasi actiune in ambele procese. 
+Ambele procese pot face aceasta operatiune de max 10 ori, daca nu se ajunge la un numar prim pana atunci afiseaza "DRAW" si se opresc ambele procese. 
+ex. P1 -> 5 la P2
+    P2: 5 + 7(aleator) = 12 (nu e prim)
+	P2 -> 12 la P1
+	P1: 12 + 2 = 14 (nu e prim)
+	P1 -> 14 la P2
+	P2: 14 + 3 = 17 (prim)
+	P2: "I won" + exit
+	P2 -> "FINISH" la P1
+	P1: exit
+	
+ 

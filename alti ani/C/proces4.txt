@@ -1,0 +1,98 @@
+/*
+Procesul 4 
+	- primeste de la Proces2 un sir de caractere
+	- primeste de la Proces3 un sir de caractere
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+
+int main(){
+   int pipe2, pipe3;
+   int fd24, fd34;
+   char buffer2[35], buffer3[35];
+   char l,c,aux;
+   int i,j,k;
+
+   //creare pipe pentru comunicare cu procesul2
+   pipe2=mkfifo("pipe_2to4",0666);
+   if (pipe2<0){
+	printf("\nPROCES4: Eroare la creare FIFO2->4");
+   }
+
+   //creare pipe pentru comunicare cu procesul3
+   pipe3=mkfifo("pipe_3to4",0666);
+   if (pipe3<0){
+	printf("\nPROCES4: Eroare la creare FIFO3->4");
+   }
+   
+   //deschid pipe-ul pentru citire
+   fd24=open("pipe_2to4",O_RDONLY);
+   if (fd24<0){
+	printf("\nPROCES4: Eroare la deschidere FIFO2->4");
+	exit(1);
+   } 
+
+   //citesc din pipe
+   i=0;
+   do{
+	l=read(fd24,&c,sizeof(char));
+	if(l>0){	//e valid
+        	buffer2[i]=c;
+		i++;
+	}
+   }while (l>0);
+   buffer2[i]=0;
+   close(fd24);
+
+   printf("\nPROCES4: Am citit de la proces2: %s", buffer2);
+
+   //ordonez sirul
+   for(j=0; j<i-1; j++)
+      for(k=j+1; k<i; k++)
+	  if (buffer2[j]>buffer2[k]){
+		aux = buffer2[j];
+		buffer2[j]=buffer2[k];
+		buffer2[k]=aux;
+	  }
+   printf("\nPROCES4: Sirul de la proces 2 ordonat este: %s", buffer2);
+
+   unlink("pipe_2to4"); //sterg pipe-ul
+
+
+   //deschid pipe-ul pentru citire
+   fd34=open("pipe_3to4",O_RDONLY);
+   if (fd34<0){
+	printf("\nPROCES4: Eroare la deschidere FIFO3->4");
+	exit(1);
+   } 
+
+   //citesc din pipe
+   i=0;
+   do{
+	l=read(fd34,&c,sizeof(char));
+	if(l>0){	//e valid
+        	buffer3[i]=c;
+		i++;
+	}
+   }while (l>0);
+   buffer3[i]=0;
+   close(fd34);
+
+   printf("\nPROCES4: Am citit de la proces3: %s", buffer3);
+
+   //ordonez sirul
+   for(j=0; j<i-1; j++)
+      for(k=j+1; k<i; k++)
+	  if (buffer3[j]>buffer3[k]){
+		aux = buffer3[j];
+		buffer3[j]=buffer3[k];
+		buffer3[k]=aux;
+	  }
+   printf("\nPROCES4: Sirul de la proces 3 ordonat este: %s", buffer3);
+
+   unlink("pipe_3to4"); //sterg pipe-ul
+     
+}

@@ -1,0 +1,32 @@
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/types.h>
+int main()
+{
+
+ int fd[2];
+ int pd[2];
+ char mesaj[20];
+ 
+ pipe(fd);
+ pipe(pd);
+
+ int p=fork();
+ if(p==-1)
+    print("Nu se face fork!");
+ if(p==0)
+ {
+   char msg[10];
+   read(pd[0],msg,10);
+   printf("Proces parinte cu pid %d\n", getpid());
+   printf("Copilul a primit mesajul:", msg);
+   write(fd[1],"Salut parinte!",14); 
+   exit(0);
+  }
+  write(pd[1],"Salut copil!",13);
+  read(fd[0], mesaj,20);
+  printf("Parintele a primit mesajul:", mesaj);
+  
+}
+
+Un tip de pipe bidirectional

@@ -1,0 +1,7 @@
+1.Comanda expr
+2.Planificarea schimbului cu discul magnetic
+3.Protectia fisierelor Unix
+4. shell: un program care ia ca argument din linia de comanda un nume de director, in directorul respectiv gaseste toate fisierele cu caractere ascii 
+   si afiseaza dimensiunea lor in octeti
+5. scrieti un program care ia ca argumente din linia de comanda n nume de fisiere si pt fiecare fisier creaza un thread care numara 
+  cate linii cu cuvantul "cauta" exista in acel fisier si afiseaza numarul

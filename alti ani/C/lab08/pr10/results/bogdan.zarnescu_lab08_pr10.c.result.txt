@@ -1,0 +1,5 @@
+bogdan.zarnescu_lab08_pr10.c
+test1:1
+test2:1
+test3:1
+test4:1

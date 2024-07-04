@@ -1,0 +1,6 @@
+Sa se scrie un program care avand definit un vector de numere,creeaza 3 threaduri care:
+	- primul thread calculeaza suma numerelor din vector de pe pozitii de forma 3*k (multiplu de 3), ex v[0],v[3],...
+	- al doilea thread calculeaza suma numerelor din vector de pe pozitii de forma 3*k+1 (multiplu de 3 +1), ex v[1],v[4],...
+	- al treilea thread calculeaza suma numerelor din vector de pe pozitii de forma 3*k+2 (multiplu de 3 +2)
+	
+*(cine a terminat prima parte) Threadurile sa adauge la sfarsit suma calculata la o suma globala. Programul pincipal afiseaza suma totala a vectorului.

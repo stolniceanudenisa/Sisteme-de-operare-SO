@@ -1,0 +1,39 @@
+int main ()
+{
+  pid_t pid;
+  int mypipe[2];
+
+  /* Create the pipe. */
+  if (pipe (mypipe) < 0)
+    {
+      fprintf (stderr, "Pipe failed.\n");
+      return EXIT_FAILURE;
+    }
+
+  /* Create the child process. */
+  pid = fork ();
+  if (pid == 0)
+    {
+      /* This is the child process.
+         Close other end first. */
+      close (mypipe[1]);
+      char mesaj2[100];
+      read(mypipe[0],mesaj2,sizeof(mesaj2));
+      return EXIT_SUCCESS;
+    }
+  else if (pid < 0)
+    {
+      /* The fork failed. */
+      fprintf (stderr, "Fork failed.\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      /* This is the parent process.
+         Close other end first. */
+      close (mypipe[0]);
+      char mesaj[]="hello,din parinte\n";
+      write(mypipe[1],mesaj, sizeof(mesaj));
+      return EXIT_SUCCESS;
+    }
+}

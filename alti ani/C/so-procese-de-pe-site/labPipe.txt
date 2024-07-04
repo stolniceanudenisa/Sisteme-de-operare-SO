@@ -1,0 +1,4 @@
+Sa se implementeze un proces care creeaza un proces fiu cu care comunica
+prin pipe. Procesul parinte trimite prin pipe procesului fiu doua numere
+intregi iar fiul returneaza prin pipe suma lor.
+(man pipe)

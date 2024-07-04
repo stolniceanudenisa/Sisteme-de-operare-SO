@@ -1,0 +1,67 @@
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+int c2s[2];	//client To server
+int s2c[2];	//server to client
+
+char messageFromServer[50]; //buffer in care sa citim
+char fileName[30];
+char fileNameParent[30];
+char mode[5];
+char modeParent[5];
+int modeNr;
+//citim din 0 si scriem in 1
+
+main(){
+
+  pipe(c2s);     //cream un canal de comunicare bidirectional
+  pipe(s2c);
+
+  if (fork()==0){
+      printf("%d:->>Incepem\n",getpid());
+
+      printf("Dati numele fisierului:");
+      scanf("%s",&fileName);
+      printf("Dreptul de acces:");
+      scanf("%s",&mode);
+
+      close(c2s[0]);   //inchide capatul de citire c2s 
+      write(c2s[1],fileName,30); //scrie in pipe
+      write(c2s[1],mode,4);
+      close(c2s[1]);   //inchide capatul utilizat c2s
+
+      close(s2c[1]);	//inchide capatul de scriere s2c
+      read(s2c[0],&messageFromServer,35);
+      close(s2c[0]);	//inchide capatul utilizat s2c
+      printf("%s",&messageFromServer);  
+      exit(0);
+  }
+
+  printf("%d:->>Incepem parinte \n",getpid());
+
+  close(c2s[1]);	//inchide capatul de scriere c2s
+  read(c2s[0],fileNameParent,30);  //citeste de la client
+  read(c2s[0],modeParent,4);
+  
+  printf("%d:-->> am primit %s + %s \n",getpid(),fileNameParent,modeParent);
+  close(c2s[0]);	    //inchide capatul utilizat
+  
+  int i=strtol(modeParent,0,8);
+
+  //determinam access mode curent
+  struct stat st;
+  stat(fileNameParent,&st);
+  int statchmod = st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO); 
+  if (statchmod == i)
+	write(s2c[1],"Totul este ok.\n",15);	
+	  
+  else if (chmod(fileNameParent,i)>=0)
+	write(s2c[1],"Drepturile au fost modificate.\n",31);
+  else
+	write(s2c[1],"Ceva nu este bine.\n",19);
+  close(s2c[0]);
+  close(s2c[1]);
+  wait(0);
+}
+

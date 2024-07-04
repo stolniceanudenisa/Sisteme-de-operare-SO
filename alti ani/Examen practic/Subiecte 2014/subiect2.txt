@@ -1,0 +1,17 @@
+Subiectul meu de azi de la SO : Bilet 7
+1) nu mai stiu (teorie)
+2) Imaginea unui proces UNIX in memoria RAM
+3) Mecanisme de alocare a memoriei; alocarea cu partitii fixe
+4) Shell: Sa se determine subdirectoarele dintr-un director dat ca parametru care contin un fisier ce ocupa mai mult de jumatate din 
+dimensiunea subdirectorului respectiv.
+5) Thread: Se inmultesc doua matrici. Se creeaza n*n thread-uri. In fiecare se calculeaza cate un element din matricea rezultata. (ORIBIL)
+
+..ceva de genul
+
+Altul (bilet 8 ):
+1.redirectionarea fisierelor I/O ale unei comenzi Unix;mecanism de substiutie `---` sub 7
+2.fork, exit,wait,waitpid sub 22
+3.concept de impas;iesirea din impas..blabla sub 33
+shell : sa se realizeze topul utilizatorul activi in acel moment, in ordine descrescatoare a numarul de procese.
+threaduri : sa se creeze doua threaduri.Primul thread citeste linii de maximum 100 caractere, si pune in tabloul declarat global, 
+ultimele zece linii. Al doilea thread citeste liniile din tablou si le afiseaza.

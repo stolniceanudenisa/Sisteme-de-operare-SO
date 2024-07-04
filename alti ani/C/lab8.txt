@@ -1,0 +1,24 @@
+Sa se numere toate literele fiecarei linii dintr-un fisier. Nu se vor face presupuneri referitoare la lungimea maxima a unei linii.
+
+
+#include<stdio.h>
+int main(int argc, char * argv[])
+{
+int c;
+int n=0;
+int line=1;
+FILE* fid=fopen(argv[1],"r");
+do{
+c=fgetc(fid);
+if((c>='a' && c<='z')||(c>='A' && c<='Z'))
+ n++;
+if(c=='\n'){
+printf("number of letters in line %d is %d\n",line,n);
+n=0;
+   		line++;
+}
+}
+while(c!=EOF);
+fclose(fid);
+return 0;
+}

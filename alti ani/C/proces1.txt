@@ -1,0 +1,66 @@
+/*
+Procesul 1 - citeste de la tastatura un sir de caractere si il trimite 
+	proceselor 2 si 3
+*/
+
+#include <stdio.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+int main(){
+   int fd2, fd3, count;	//descriptorii de fisier
+   char buffer1[200], buffer2[200];
+   char c; 
+
+   fd2=open("pipe_1to2", O_WRONLY);
+   if (fd2<0){
+	printf("PROCES1: Eroare la deschidere FIFO2.");
+	exit(1);
+   }
+   
+   fd3=open("pipe_1to3", O_WRONLY);
+   if (fd3<0){
+	printf("PROCES1: Eroare la deschidere FIFO3.");
+	exit(1);
+   }
+   
+   int isOdd=1;
+   while(1){
+        c=getchar();
+        count=0;
+        if (isOdd==1){   //linia este impara
+             while((c!='\n') && (c!=EOF) && (count<30)){
+	            buffer1[count]=c;
+                    count++;
+                    c=getchar();
+             }
+             if (buffer1[0]=='X')
+                 break;
+             //buffer1[count]='\n';
+             write(fd2, buffer1, strlen(buffer1));
+             isOdd=0;
+        }
+        else{
+             while((c!='\n') && (c!=EOF) && (count<30)){
+	            buffer2[count]=c;
+                    count++;
+                    c=getchar();
+             }
+             if (buffer2[0]=='X')
+                 break;
+             //buffer2[count]='\n';
+             write(fd3, buffer2, strlen(buffer2));
+             isOdd=1;
+       }
+
+   //printf("%s\n",buffer1);
+   //printf("%s\n",buffer2);
+   }
+   
+   close(fd2);
+   close(fd3);
+   exit(0);  
+}
+											
