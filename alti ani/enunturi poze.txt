@@ -1,0 +1,7 @@
+Să se scrie un script shell care îmi listeaza conţinutul directorului curent. Se vor face trei afişări: una sortată după numele fişierelor, alta după timpul ultimului acces la ele şi cea de-a treia, după dimensiunea în bytes a acestora.
+Să se afişeze numele tuturor utilizatorilor daţi ca parametri linia de comandă care nu s-au conectat niciodată la serverul curent.
+Să se adauge în faţa fiecarei litere mici cuvântul indicat ca prim parametru. Fişierele tratate sunt ceilalţi parametri din linia de comanda.
+Să se afişeze liniile din fişiere care conţin un acelaşi cuvânt aflat în pozitii consecutive. Pentru liniile respective să se afişeze şi numărul liniei precum şi cuvântul implicat.(în cadrul fişierului din care face parte).
+Să se scrie un program Shell care primeşte ca parametri două nume de directoare şi mută ramura desemnată de cel de-al doilea director ca subramura a primului, dar se copiază numai cu fişierele .txt
+Sa se scrie un program care primeste in linia de comanda ca si parametrii doua cuvinte si numele unui fisier. Programul va afisa la iesirea standard continutul fisierului, inlocuind aparitiile primului cuvant cu al doilea.
+Fie P un proces ce determină cmmdc a două numere. Folosind o structură adecvată de astfel de procese să se scrie un program ce determină cmmdc a N numere date.
